@@ -1,0 +1,853 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>IT Asset Management</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ink:#0b1220; --steel:#141d2e; --steel-2:#1c2740; --steel-line:#2b3854;
+    --paper:#eef1f6; --surface:#ffffff; --line:#dfe4ec; --line-soft:#eef1f6;
+    --text:#1a2438; --text-2:#5b6780; --text-3:#8a94a8;
+    --accent:#1f6feb; --accent-ink:#0d4bb5; --accent-bg:#e8f0fe;
+    --ok:#1a7f52; --ok-bg:#e2f3ea; --warn:#a15c00; --warn-bg:#fbeeda;
+    --busy:#1f4fa8; --busy-bg:#e6eefb; --danger:#b3261e; --danger-bg:#fbe9e7;
+    --mute:#5b6780; --mute-bg:#eceef3; --repair:#9a4a00; --repair-bg:#fae8d6;
+    --radius:10px; --shadow:0 1px 2px rgba(16,24,40,.04),0 1px 3px rgba(16,24,40,.06);
+  }
+  *{box-sizing:border-box}
+  body{margin:0;font-family:'Inter',system-ui,sans-serif;background:var(--paper);color:var(--text);font-size:14px;line-height:1.5}
+  .mono{font-family:'IBM Plex Mono',monospace;font-feature-settings:"tnum"}
+  button{font-family:inherit;cursor:pointer}
+  input,select,textarea{font-family:inherit;font-size:13px;color:var(--text)}
+  a{color:var(--accent)}
+
+  /* ===== Layout ===== */
+  .app{display:grid;grid-template-columns:232px 1fr;min-height:100vh}
+  .side{background:var(--steel);color:#c4cee0;position:sticky;top:0;height:100vh;display:flex;flex-direction:column;padding:0}
+  .brand{display:flex;align-items:center;gap:10px;padding:20px 20px 18px;border-bottom:1px solid var(--steel-line)}
+  .brand .mark{width:34px;height:34px;border-radius:9px;background:linear-gradient(135deg,#2a6cf0,#1546a8);display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700;font-size:15px;letter-spacing:-.5px}
+  .brand h1{font-size:14px;font-weight:600;color:#fff;margin:0;line-height:1.25}
+  .brand span{font-size:11px;color:#7f8db0;font-weight:500}
+  .nav{padding:12px 12px;display:flex;flex-direction:column;gap:2px;overflow-y:auto;flex:1}
+  .nav .grp{font-size:10.5px;text-transform:uppercase;letter-spacing:.09em;color:#5e6d92;padding:14px 10px 6px;font-weight:600}
+  .nav a{display:flex;align-items:center;gap:11px;padding:8px 11px;border-radius:8px;color:#aeb9d2;text-decoration:none;font-size:13px;font-weight:500;transition:background .12s,color .12s}
+  .nav a svg{width:17px;height:17px;stroke-width:1.9;opacity:.85}
+  .nav a:hover{background:var(--steel-2);color:#e6ecf7}
+  .nav a.on{background:var(--accent);color:#fff}
+  .nav a.on svg{opacity:1}
+  .side-foot{padding:12px;border-top:1px solid var(--steel-line)}
+  .conn{display:flex;align-items:center;gap:8px;font-size:11.5px;color:#8a97b8;padding:6px 8px}
+  .dot{width:7px;height:7px;border-radius:50%;background:#f0a500}
+  .dot.live{background:#3ecf8e}
+
+  .main{display:flex;flex-direction:column;min-width:0}
+  .top{background:var(--surface);border-bottom:1px solid var(--line);padding:16px 28px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:20}
+  .top h2{font-size:18px;font-weight:600;margin:0;letter-spacing:-.2px}
+  .top .sub{font-size:12.5px;color:var(--text-3);margin-top:1px}
+  .top-actions{display:flex;gap:9px;align-items:center}
+  .content{padding:24px 28px 60px;max-width:1240px;width:100%}
+
+  /* ===== Controls ===== */
+  .btn{border:1px solid var(--line);background:var(--surface);color:var(--text);padding:8px 14px;border-radius:8px;font-size:13px;font-weight:500;display:inline-flex;align-items:center;gap:7px;transition:.12s}
+  .btn:hover{border-color:#c3cad8;background:#fafbfc}
+  .btn svg{width:15px;height:15px;stroke-width:2}
+  .btn.pri{background:var(--accent);border-color:var(--accent);color:#fff}
+  .btn.pri:hover{background:var(--accent-ink);border-color:var(--accent-ink)}
+  .btn.ghost{border-color:transparent;background:transparent;color:var(--text-2)}
+  .btn.ghost:hover{background:var(--line-soft)}
+  .field{display:flex;flex-direction:column;gap:5px}
+  .field label{font-size:12px;font-weight:500;color:var(--text-2)}
+  .inp,select.inp,textarea.inp{border:1px solid var(--line);border-radius:8px;padding:8px 11px;background:var(--surface);width:100%;transition:.12s;outline:none}
+  .inp:focus{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-bg)}
+  .inp:disabled{background:var(--line-soft);color:var(--text-2)}
+
+  /* ===== Cards / grid ===== */
+  .stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:14px;margin-bottom:22px}
+  .stat{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);padding:16px 17px;box-shadow:var(--shadow);position:relative;overflow:hidden}
+  .stat::before{content:"";position:absolute;left:0;top:0;bottom:0;width:3px;background:var(--bar,var(--accent))}
+  .stat .lab{font-size:12px;color:var(--text-2);font-weight:500;display:flex;align-items:center;gap:6px}
+  .stat .val{font-size:27px;font-weight:700;margin-top:7px;letter-spacing:-.5px;font-family:'IBM Plex Mono',monospace}
+  .panels{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+  .card{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow)}
+  .card-h{padding:15px 18px;border-bottom:1px solid var(--line-soft);display:flex;align-items:center;justify-content:space-between}
+  .card-h h3{font-size:14px;font-weight:600;margin:0}
+  .card-b{padding:16px 18px}
+  .bar-row{display:flex;align-items:center;gap:11px;margin-bottom:11px}
+  .bar-row .k{font-size:12.5px;color:var(--text-2);width:92px;flex-shrink:0}
+  .bar-track{flex:1;height:9px;background:var(--line-soft);border-radius:5px;overflow:hidden}
+  .bar-fill{height:100%;border-radius:5px;background:var(--accent)}
+  .bar-row .v{font-size:12.5px;font-weight:600;width:28px;text-align:right;font-family:'IBM Plex Mono',monospace}
+
+  /* ===== Toolbar + table ===== */
+  .toolbar{display:flex;gap:10px;align-items:center;margin-bottom:16px;flex-wrap:wrap}
+  .toolbar .grow{flex:1;min-width:180px}
+  .search{position:relative;flex:1;min-width:200px}
+  .search svg{position:absolute;left:11px;top:50%;transform:translateY(-50%);width:15px;height:15px;color:var(--text-3);stroke-width:2}
+  .search input{width:100%;border:1px solid var(--line);border-radius:8px;padding:8px 11px 8px 34px;background:var(--surface);outline:none}
+  .search input:focus{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-bg)}
+  .tbl-wrap{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);overflow:auto;box-shadow:var(--shadow)}
+  table{border-collapse:collapse;width:100%;font-size:13px}
+  thead th{background:#f7f8fb;color:var(--text-2);font-weight:600;text-align:left;padding:10px 14px;white-space:nowrap;border-bottom:1px solid var(--line);position:sticky;top:0;font-size:11.5px;text-transform:uppercase;letter-spacing:.03em}
+  tbody td{padding:11px 14px;border-bottom:1px solid var(--line-soft);white-space:nowrap}
+  tbody tr:last-child td{border-bottom:none}
+  tbody tr:hover{background:#f9fafc}
+  .empty{padding:40px;text-align:center;color:var(--text-3);font-size:13px}
+
+  /* ===== Pills ===== */
+  .pill{display:inline-flex;align-items:center;gap:5px;padding:3px 9px;border-radius:20px;font-size:11.5px;font-weight:600;white-space:nowrap}
+  .pill::before{content:"";width:6px;height:6px;border-radius:50%;background:currentColor}
+  .pill.instock{background:var(--ok-bg);color:var(--ok)}
+  .pill.assigned{background:var(--busy-bg);color:var(--busy)}
+  .pill.borrowed{background:var(--warn-bg);color:var(--warn)}
+  .pill.repair{background:var(--repair-bg);color:var(--repair)}
+  .pill.disposed{background:var(--danger-bg);color:var(--danger)}
+  .pill.lost{background:var(--mute-bg);color:var(--mute)}
+  .tag{font-family:'IBM Plex Mono',monospace;font-size:12.5px;font-weight:500;color:var(--accent-ink)}
+  .type-b{background:var(--warn-bg);color:var(--warn)}
+  .type-t{background:var(--busy-bg);color:var(--busy)}
+  .badge{display:inline-block;padding:2px 8px;border-radius:6px;font-size:11px;font-weight:600}
+
+  /* ===== Modal ===== */
+  .overlay{position:fixed;inset:0;background:rgba(11,18,32,.5);display:none;align-items:flex-start;justify-content:center;z-index:100;padding:40px 20px;overflow-y:auto}
+  .overlay.open{display:flex}
+  .modal{background:var(--surface);border-radius:14px;width:100%;max-width:560px;box-shadow:0 20px 60px rgba(0,0,0,.25);animation:pop .16s ease}
+  .modal.wide{max-width:760px}
+  @keyframes pop{from{transform:translateY(8px);opacity:0}to{transform:none;opacity:1}}
+  .modal-h{padding:18px 22px;border-bottom:1px solid var(--line-soft);display:flex;align-items:center;justify-content:space-between}
+  .modal-h h3{margin:0;font-size:16px;font-weight:600}
+  .modal-b{padding:20px 22px}
+  .modal-f{padding:15px 22px;border-top:1px solid var(--line-soft);display:flex;justify-content:flex-end;gap:10px}
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+  .grid3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px}
+  .x{background:none;border:none;color:var(--text-3);padding:4px;border-radius:6px;display:flex}
+  .x:hover{background:var(--line-soft)}
+  .x svg{width:18px;height:18px;stroke-width:2}
+
+  /* ===== Toast ===== */
+  #toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(80px);background:var(--ink);color:#fff;padding:12px 20px;border-radius:10px;font-size:13px;font-weight:500;box-shadow:0 8px 30px rgba(0,0,0,.3);z-index:200;transition:transform .25s;display:flex;align-items:center;gap:9px;max-width:90vw}
+  #toast.show{transform:translateX(-50%) translateY(0)}
+  #toast svg{width:16px;height:16px;stroke-width:2.4}
+  #toast.err{background:var(--danger)}
+
+  .page{display:none}
+  .page.on{display:block}
+
+  /* ===== Print ===== */
+  .doc-wrap{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);padding:36px 40px;max-width:800px;margin:0 auto;box-shadow:var(--shadow)}
+  .doc-title{text-align:center;margin-bottom:24px}
+  .doc-title h2{font-size:19px;margin:0 0 3px}
+  .doc-title p{font-size:12.5px;color:var(--text-3);margin:0}
+  .doc-meta{display:grid;grid-template-columns:1fr 1fr;gap:8px 24px;font-size:13px;margin-bottom:20px;padding-bottom:18px;border-bottom:1px solid var(--line)}
+  .doc-meta .row{display:flex;gap:8px}
+  .doc-meta .row b{color:var(--text-2);font-weight:500;min-width:110px}
+  table.doc-tbl{border:1px solid #c9cfdb;margin-bottom:32px}
+  table.doc-tbl th,table.doc-tbl td{border:1px solid #d5dae4;padding:8px 11px;font-size:12.5px}
+  .sign-row{display:grid;grid-template-columns:1fr 1fr;gap:48px;margin-top:44px}
+  .sign{text-align:center}
+  .sign .line{border-bottom:1px solid #333;height:44px;margin-bottom:8px}
+  .sign p{font-size:12px;color:var(--text-2);margin:2px 0}
+  @media print{
+    .side,.top,.toolbar,.no-print{display:none!important}
+    .app{grid-template-columns:1fr}
+    .content{padding:0;max-width:none}
+    .doc-wrap{border:none;box-shadow:none;padding:0;max-width:none}
+    body{background:#fff}
+  }
+  @media(max-width:900px){
+    .app{grid-template-columns:1fr}
+    .side{position:fixed;left:-232px;z-index:50;transition:left .2s;width:232px}
+    .side.open{left:0}
+    .panels{grid-template-columns:1fr}
+  }
+</style>
+</head>
+<body>
+<div class="app">
+  <!-- Sidebar -->
+  <aside class="side" id="side">
+    <div class="brand">
+      <div class="mark">IT</div>
+      <div><h1>Asset Manager</h1><span>WFDC · CDC · HDC</span></div>
+    </div>
+    <nav class="nav" id="nav">
+      <div class="grp">Overview</div>
+      <a data-page="dashboard" class="on"><i data-ic="grid"></i>Dashboard</a>
+      <div class="grp">Inventory</div>
+      <a data-page="register"><i data-ic="box"></i>Asset Register</a>
+      <a data-page="po"><i data-ic="cart"></i>Purchase Order</a>
+      <a data-page="receiving"><i data-ic="inbox"></i>Receiving</a>
+      <div class="grp">Movement</div>
+      <a data-page="transfer"><i data-ic="swap"></i>Transfer / Borrow</a>
+      <a data-page="return"><i data-ic="undo"></i>Return</a>
+      <a data-page="history"><i data-ic="clock"></i>History</a>
+      <div class="grp">Master · Print</div>
+      <a data-page="employees"><i data-ic="users"></i>Employees</a>
+      <a data-page="models"><i data-ic="cpu"></i>Device Models</a>
+      <a data-page="print"><i data-ic="printer"></i>Print Center</a>
+    </nav>
+    <div class="side-foot">
+      <div class="conn"><span class="dot" id="connDot"></span><span id="connTxt">Demo mode</span></div>
+      <button class="btn ghost" style="width:100%;color:#aeb9d2;justify-content:flex-start" onclick="openSettings()"><i data-ic="settings"></i>ตั้งค่า Backend</button>
+    </div>
+  </aside>
+
+  <!-- Main -->
+  <div class="main">
+    <header class="top">
+      <div>
+        <h2 id="pgTitle">Dashboard</h2>
+        <div class="sub" id="pgSub">ภาพรวมทรัพย์สิน IT ทั้งหมด</div>
+      </div>
+      <div class="top-actions" id="topActions"></div>
+    </header>
+    <div class="content">
+      <!-- Dashboard -->
+      <section class="page on" id="page-dashboard">
+        <div class="stats" id="statCards"></div>
+        <div class="panels">
+          <div class="card">
+            <div class="card-h"><h3>ทรัพย์สินตามหมวดหมู่</h3></div>
+            <div class="card-b" id="chartCat"></div>
+          </div>
+          <div class="card">
+            <div class="card-h"><h3>ทรัพย์สินตาม Site</h3></div>
+            <div class="card-b" id="chartSite"></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Asset Register -->
+      <section class="page" id="page-register">
+        <div class="toolbar">
+          <select class="inp" id="fSite" style="width:130px" onchange="renderRegister()"><option value="">ทุก Site</option></select>
+          <select class="inp" id="fStatus" style="width:150px" onchange="renderRegister()"><option value="">ทุกสถานะ</option></select>
+          <div class="search"><i data-ic="search"></i><input id="fSearch" placeholder="ค้นหา Finance Tag / S/N / ชื่อผู้ถือ" oninput="renderRegister()"></div>
+        </div>
+        <div class="tbl-wrap"><table>
+          <thead><tr><th>Finance Tag</th><th>Brand / Model</th><th>S/N</th><th>ผู้ถือครอง</th><th>Work Location</th><th>Site</th><th>Status</th><th></th></tr></thead>
+          <tbody id="tblRegister"></tbody>
+        </table></div>
+      </section>
+
+      <!-- Purchase Order -->
+      <section class="page" id="page-po">
+        <div class="tbl-wrap"><table>
+          <thead><tr><th>PO No.</th><th>Date</th><th>Vendor</th><th>Description</th><th>Type</th><th>Qty</th><th>Received</th><th>Total</th><th>Status</th></tr></thead>
+          <tbody id="tblPO"></tbody>
+        </table></div>
+      </section>
+
+      <!-- Receiving -->
+      <section class="page" id="page-receiving">
+        <div class="tbl-wrap"><table>
+          <thead><tr><th>GR No.</th><th>PO No.</th><th>Date</th><th>Finance Tag</th><th>S/N</th><th>Brand</th><th>Model</th><th>Cost</th><th>By</th></tr></thead>
+          <tbody id="tblReceiving"></tbody>
+        </table></div>
+      </section>
+
+      <!-- Transfer / Borrow -->
+      <section class="page" id="page-transfer">
+        <div class="tbl-wrap"><table>
+          <thead><tr><th>Document No.</th><th>Date</th><th>Type</th><th>Employee</th><th>Department</th><th>Items</th><th>Status</th></tr></thead>
+          <tbody id="tblTransfer"></tbody>
+        </table></div>
+      </section>
+
+      <!-- Return -->
+      <section class="page" id="page-return">
+        <p style="color:var(--text-2);margin:0 0 16px;font-size:13px">เอกสาร Borrow ที่ยังไม่คืน — กด "รับคืน" เพื่อคืนอุปกรณ์ทั้งหมดในเอกสารกลับสถานะ In Stock</p>
+        <div class="tbl-wrap"><table>
+          <thead><tr><th>Document No.</th><th>Date</th><th>Employee</th><th>Items</th><th>Status</th><th></th></tr></thead>
+          <tbody id="tblReturn"></tbody>
+        </table></div>
+      </section>
+
+      <!-- History -->
+      <section class="page" id="page-history">
+        <div class="toolbar">
+          <div class="search"><i data-ic="search"></i><input id="hSearch" placeholder="ค้นหา Finance Tag / ประเภท / เอกสาร" oninput="renderHistory()"></div>
+        </div>
+        <div class="tbl-wrap"><table>
+          <thead><tr><th>Txn ID</th><th>Date</th><th>Finance Tag</th><th>Type</th><th>From</th><th>To</th><th>Employee</th><th>Doc No.</th></tr></thead>
+          <tbody id="tblHistory"></tbody>
+        </table></div>
+      </section>
+
+      <!-- Employees -->
+      <section class="page" id="page-employees">
+        <div class="toolbar">
+          <div class="search"><i data-ic="search"></i><input id="eSearch" placeholder="ค้นหาชื่อ / Employee ID / แผนก" oninput="renderEmployees()"></div>
+        </div>
+        <div class="tbl-wrap"><table>
+          <thead><tr><th>Employee ID</th><th>ชื่อ</th><th>ตำแหน่ง</th><th>แผนก</th><th>Site</th><th>เบอร์โทร</th><th>สถานะ</th><th></th></tr></thead>
+          <tbody id="tblEmployees"></tbody>
+        </table></div>
+      </section>
+
+      <!-- Device Models -->
+      <section class="page" id="page-models">
+        <div class="tbl-wrap"><table>
+          <thead><tr><th>Model Name</th><th>Type</th><th>Brand</th><th>CPU</th><th>RAM</th><th>Storage</th><th>Cost</th><th>Warranty</th><th></th></tr></thead>
+          <tbody id="tblModels"></tbody>
+        </table></div>
+      </section>
+
+      <!-- Print Center -->
+      <section class="page" id="page-print">
+        <div class="toolbar no-print">
+          <select class="inp" id="pTemplate" style="width:270px" onchange="onTemplateChange()">
+            <option value="">เลือกเทมเพลตปริ๊น…</option>
+            <option value="transfer">1 · IT Equipment Transfer / Borrow Form</option>
+            <option value="receipt">2 · Company Asset Receipt-Return Form</option>
+            <option value="spec">3 · Notebook / PC Spec Handover</option>
+          </select>
+          <select class="inp" id="pDoc" style="width:260px"></select>
+          <button class="btn pri" onclick="window.print()"><i data-ic="printer"></i>Print</button>
+        </div>
+        <div id="printArea"><div class="empty">เลือกเทมเพลตและเอกสารเพื่อแสดงตัวอย่างก่อนปริ๊น</div></div>
+      </section>
+    </div>
+  </div>
+</div>
+
+<!-- Modal shell -->
+<div class="overlay" id="overlay"><div class="modal" id="modal"></div></div>
+<div id="toast"></div>
+
+<script>
+// ================= ICONS =================
+function ic(n){
+  const p={
+    grid:'<rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/>',
+    box:'<path d="M21 8 12 3 3 8v8l9 5 9-5V8Z"/><path d="M3 8l9 5 9-5"/><path d="M12 13v8"/>',
+    cart:'<circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.7 13.4a2 2 0 0 0 2 1.6h9.7a2 2 0 0 0 2-1.6L23 6H6"/>',
+    inbox:'<path d="M22 12h-6l-2 3h-4l-2-3H2"/><path d="M5.4 5.4 2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.4-6.6A2 2 0 0 0 16.8 4H7.2a2 2 0 0 0-1.8 1.4Z"/>',
+    swap:'<path d="M7 16H3l4 4"/><path d="M3 16h14a4 4 0 0 0 0-8h-1"/><path d="M17 8h4l-4-4"/><path d="M21 8H7a4 4 0 0 0 0 8h1" opacity=".35"/>',
+    undo:'<path d="M3 7v6h6"/><path d="M3 13a9 9 0 1 0 3-7L3 9"/>',
+    clock:'<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>',
+    users:'<path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.9"/><path d="M16 3.1A4 4 0 0 1 16 11"/>',
+    cpu:'<rect x="5" y="5" width="14" height="14" rx="2"/><rect x="9" y="9" width="6" height="6"/><path d="M9 2v3M15 2v3M9 19v3M15 19v3M2 9h3M2 15h3M19 9h3M19 15h3"/>',
+    printer:'<path d="M6 9V2h12v7"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/>',
+    settings:'<circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.6 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.6a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1Z"/>',
+    search:'<circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/>',
+    plus:'<path d="M12 5v14M5 12h14"/>',
+    edit:'<path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.1 2.1 0 0 1 3 3L12 15l-4 1 1-4Z"/>',
+    check:'<path d="M20 6 9 17l-5-5"/>',
+    x:'<path d="M18 6 6 18M6 6l12 12"/>',
+    trash:'<path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2m3 0v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/>'
+  };
+  return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">'+(p[n]||'')+'</svg>';
+}
+
+// ================= STATE =================
+const SITES=['WFDC','CDC','HDC'];
+const STAT_LIST=['In Stock','Borrowed','Assigned','Repair','Disposed','Lost'];
+const STAT_CLASS={'In Stock':'instock','Borrowed':'borrowed','Assigned':'assigned','Repair':'repair','Disposed':'disposed','Lost':'lost'};
+const STAT_BAR={'In Stock':'#1a7f52','Borrowed':'#a15c00','Assigned':'#1f4fa8','Repair':'#9a4a00','Disposed':'#b3261e','Lost':'#5b6780'};
+let DB={Employees:[],DeviceModels:[],AssetRegister:[],PurchaseOrder:[],Receiving:[],TransferDocument:[],TransferItems:[],AssetHistory:[]};
+let BACKEND_URL=localStorage.getItem('it_asset_url')||'https://script.google.com/macros/s/AKfycbwQP3L4skhjlTV1ZdYcvhu0nfMbhNLsmQTmTKcHCnOhTIdxrbTepo_qusUg8N-6fzXE/exec';
+let DEMO=!BACKEND_URL;
+
+// ================= DEMO DATA =================
+function seedDemo(){
+  DB.Employees=[
+    {'Employee ID':'TH061233','Name':'Mr. Jamorn Srisoontorn','Position':'Site Manager - DC Operation','Department':'WFDC Operations','Site':'WFDC','Join Date':'2020-05-01','Mobile Phone No.':'081-234-5678','Active':'Yes'},
+    {'Employee ID':'TH061693','Name':'Mr. Noppdon Chuaikhit','Position':'Supervisor - Reach Trucks Driver','Department':'WFDC Operations','Site':'WFDC','Join Date':'2026-07-16','Mobile Phone No.':'089-111-2222','Active':'Yes'},
+    {'Employee ID':'CD004512','Name':'Ms. Suda Wongsai','Position':'IT Support','Department':'CDC IT','Site':'CDC','Join Date':'2022-01-10','Mobile Phone No.':'086-777-8888','Active':'Yes'}
+  ];
+  DB.DeviceModels=[
+    {'Model Name':'HP ProBook 440 G10','Device Type':'NB','Brand':'HP','Product Name':'HP ProBook 440 G10','OS':'Win 11 Pro','Processor':'12th Gen Intel Core i7-1255U @1.70GHz','LCD':'14" FHD IPS 250 nits','Graphics':'Intel Iris Xe','Memory':'16 GB','Storage':'1 TB','Standard Cost':'31000','Standard Adaptor Price':'2118.60','Standard Mouse Price':'695.50','Warranty Years':'3'},
+    {'Model Name':'Dell OptiPlex 7010','Device Type':'PC','Brand':'Dell','Product Name':'Dell OptiPlex 7010 SFF','OS':'Win 11 Pro','Processor':'13th Gen Intel Core i5-13500','LCD':'-','Graphics':'Intel UHD 770','Memory':'16 GB','Storage':'512 GB SSD','Standard Cost':'24500','Standard Adaptor Price':'0','Standard Mouse Price':'350','Warranty Years':'3'}
+  ];
+  DB.AssetRegister=[
+    mkAsset(1,'WFDC','NB Laptop','HP','HP ProBook 440 G10','G185GC4','CJLWFDCNB013','In Stock','','','',''),
+    mkAsset(2,'WFDC','NB Laptop','HP','HP ProBook 440 G10','G186XX2','CJLWFDCNB014','Assigned','TH061693','Mr. Noppdon Chuaikhit','WFDC Operations','WFDC03-2026'),
+    mkAsset(3,'CDC','PC Desktop','Dell','Dell OptiPlex 7010','DL77120','CJLCDCPC0031','Borrowed','CD004512','Ms. Suda Wongsai','CDC IT','CDC01-2026'),
+    mkAsset(4,'HDC','Monitor','Dell','Dell P2422H','MN55210','CJLHDCMN0087','In Stock','','','',''),
+    mkAsset(5,'WFDC','Printer','Brother','Brother HL-L2375DW','PR90012','CJLWFDCPR0009','Repair','','','','')
+  ];
+  DB.PurchaseOrder=[
+    {'PO No.':'PO-001','PO Date':'2026-06-10','Vendor':'IT Supply Co.','Description':'HP ProBook 440 G10','IT Asset Type':'NB Laptop','Qty':10,'Unit Price':31000,'Total':310000,'Expected Date':'2026-06-25','Received Qty':2,'Status':'Partially Received'},
+    {'PO No.':'PO-002','PO Date':'2026-06-15','Vendor':'Office Mart','Description':'Dell P2422H Monitor','IT Asset Type':'Monitor','Qty':5,'Unit Price':4500,'Total':22500,'Expected Date':'2026-06-28','Received Qty':1,'Status':'Partially Received'}
+  ];
+  DB.Receiving=[
+    {'GR No.':'GR-001','PO No.':'PO-001','Receive Date':'2026-06-20','Finance Tag':'CJLWFDCNB013','S/N':'G185GC4','Brand':'HP','Model':'HP ProBook 440 G10','Cost':31000,'Condition':'New','IT Received':'Nontawat P.'},
+    {'GR No.':'GR-002','PO No.':'PO-001','Receive Date':'2026-06-20','Finance Tag':'CJLWFDCNB014','S/N':'G186XX2','Brand':'HP','Model':'HP ProBook 440 G10','Cost':31000,'Condition':'New','IT Received':'Nontawat P.'}
+  ];
+  DB.TransferDocument=[
+    {'Document No.':'WFDC03-2026','Document Date':'2026-08-11','Type':'Transfer','Employee ID':'TH061693','Employee Name':'Mr. Noppdon Chuaikhit','Position':'Supervisor - Reach Trucks Driver','Department':'WFDC Operations','Site':'WFDC','Created By':'Thanaphat Jangsawang','Supervisor Name':'Thipmani Chatrungrattana','Transfer Date':'2026-06-22','Description':'New hire equipment','Doc Status':'Open'},
+    {'Document No.':'CDC01-2026','Document Date':'2026-08-05','Type':'Borrow','Employee ID':'CD004512','Employee Name':'Ms. Suda Wongsai','Position':'IT Support','Department':'CDC IT','Site':'CDC','Created By':'Somchai T.','Transfer Date':'2026-08-05','Description':'Temporary loan for project','Doc Status':'Open'}
+  ];
+  DB.TransferItems=[
+    {'Document No.':'WFDC03-2026','No.':1,'Finance Tag':'CJLWFDCNB014','Device':'Laptop','Brand':'HP','Model':'HP ProBook 440 G10','Serial Number':'G186XX2'},
+    {'Document No.':'CDC01-2026','No.':1,'Finance Tag':'CJLCDCPC0031','Device':'Desktop PC','Brand':'Dell','Model':'Dell OptiPlex 7010','Serial Number':'DL77120'}
+  ];
+  DB.AssetHistory=[
+    {'Transaction ID':'TXN-0001','Date':'2026-06-20','Finance Tag':'CJLWFDCNB013','Transaction Type':'Received','From':'Vendor','To':'Stock','Employee':'Nontawat P.','Document No.':'PO-001'},
+    {'Transaction ID':'TXN-0002','Date':'2026-06-20','Finance Tag':'CJLWFDCNB014','Transaction Type':'Received','From':'Vendor','To':'Stock','Employee':'Nontawat P.','Document No.':'PO-001'},
+    {'Transaction ID':'TXN-0003','Date':'2026-08-11','Finance Tag':'CJLWFDCNB014','Transaction Type':'Transferred','From':'Stock','To':'Mr. Noppdon Chuaikhit','Employee':'Mr. Noppdon Chuaikhit','Department':'WFDC Operations','Document No.':'WFDC03-2026'},
+    {'Transaction ID':'TXN-0004','Date':'2026-08-05','Finance Tag':'CJLCDCPC0031','Transaction Type':'Borrowed','From':'Stock','To':'Ms. Suda Wongsai','Employee':'Ms. Suda Wongsai','Department':'CDC IT','Document No.':'CDC01-2026'}
+  ];
+}
+function mkAsset(no,site,type,brand,model,sn,tag,status,eid,owner,dept,doc){
+  return {'No.':no,'Site':site,'Asset Type':type,'IT Asset Type':type,'Brand':brand,'Model':model,'S/N':sn,'Finance Tag':tag,'Received Date':'2026-06-20','Status':status,'Work Location':site+' Office','Employee ID':eid,'Owner Name':owner,'Department':dept,'Document No.':doc,'row_id':'r'+no};
+}
+
+// ================= API =================
+async function apiGet(){
+  if(DEMO){seedDemo();return;}
+  const r=await fetch(BACKEND_URL);
+  const j=await r.json();
+  if(j.success)DB=j.data;
+}
+async function apiPost(action,payload){
+  if(DEMO){return {success:true,code:'DEMO',params:{}};}
+  const r=await fetch(BACKEND_URL,{method:'POST',body:JSON.stringify({action:action,payload:payload})});
+  return await r.json();
+}
+
+// ================= NAV =================
+const PAGE_META={
+  dashboard:['Dashboard','ภาพรวมทรัพย์สิน IT ทั้งหมด'],
+  register:['Asset Register','ทะเบียนทรัพย์สินหลัก · ค้นหาตาม Location'],
+  po:['Purchase Order','รายการสั่งซื้อและสถานะการรับของ'],
+  receiving:['Receiving','บันทึกการรับของเข้าคลัง'],
+  transfer:['Transfer / Borrow','เอกสารโอน-ยืมอุปกรณ์'],
+  return:['Return','รับคืนอุปกรณ์ที่ยืม'],
+  history:['History','ประวัติการเคลื่อนไหวของทรัพย์สิน'],
+  employees:['Employees','ฐานข้อมูลพนักงาน'],
+  models:['Device Models','รุ่นอุปกรณ์มาตรฐาน PC / NB'],
+  print:['Print Center','พิมพ์เอกสารทางการ']
+};
+const PAGE_ACTIONS={
+  po:'<button class="btn pri" onclick="modalPO()">'+ic('plus')+'สร้าง PO</button>',
+  receiving:'<button class="btn pri" onclick="modalReceiving()">'+ic('plus')+'รับของเข้า</button>',
+  transfer:'<button class="btn pri" onclick="modalTransfer()">'+ic('plus')+'สร้างเอกสาร</button>',
+  employees:'<button class="btn pri" onclick="modalEmployee()">'+ic('plus')+'เพิ่มพนักงาน</button>',
+  models:'<button class="btn pri" onclick="modalModel()">'+ic('plus')+'เพิ่มรุ่น</button>'
+};
+function nav(page){
+  document.querySelectorAll('.nav a').forEach(a=>a.classList.toggle('on',a.dataset.page===page));
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('on'));
+  document.getElementById('page-'+page).classList.add('on');
+  document.getElementById('pgTitle').textContent=PAGE_META[page][0];
+  document.getElementById('pgSub').textContent=PAGE_META[page][1];
+  document.getElementById('topActions').innerHTML=PAGE_ACTIONS[page]||'';
+  document.getElementById('side').classList.remove('open');
+}
+document.getElementById('nav').addEventListener('click',e=>{
+  const a=e.target.closest('a[data-page]');if(a){nav(a.dataset.page);}
+});
+
+// ================= RENDER =================
+function num(x){return Number(x)||0;}
+function money(x){return num(x).toLocaleString('en-US',{minimumFractionDigits:0});}
+function pill(s){return '<span class="pill '+(STAT_CLASS[s]||'lost')+'">'+s+'</span>';}
+function esc(s){return String(s==null?'':s).replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));}
+
+function renderAll(){
+  fillSelect('fSite',SITES,'ทุก Site');
+  fillSelect('fStatus',STAT_LIST,'ทุกสถานะ');
+  renderDashboard();renderRegister();renderPO();renderReceiving();
+  renderTransfer();renderReturn();renderHistory();renderEmployees();renderModels();
+}
+function fillSelect(id,arr,ph){
+  const s=document.getElementById(id);if(!s)return;
+  const cur=s.value;
+  s.innerHTML='<option value="">'+ph+'</option>'+arr.map(x=>'<option>'+x+'</option>').join('');
+  s.value=cur;
+}
+
+function renderDashboard(){
+  const A=DB.AssetRegister;
+  const counts={Total:A.length};
+  STAT_LIST.forEach(s=>counts[s]=A.filter(a=>a.Status===s).length);
+  const cards=[['Total assets',counts.Total,'#1f6feb'],['In stock',counts['In Stock'],STAT_BAR['In Stock']],['Assigned',counts.Assigned,STAT_BAR.Assigned],['Borrowed',counts.Borrowed,STAT_BAR.Borrowed],['Repair',counts.Repair,STAT_BAR.Repair],['Disposed',counts.Disposed,STAT_BAR.Disposed]];
+  document.getElementById('statCards').innerHTML=cards.map(c=>
+    '<div class="stat" style="--bar:'+c[2]+'"><div class="lab">'+c[0]+'</div><div class="val">'+c[1]+'</div></div>').join('');
+  // by category
+  const byCat={};A.forEach(a=>{const k=a['IT Asset Type']||a['Asset Type']||'อื่นๆ';byCat[k]=(byCat[k]||0)+1;});
+  document.getElementById('chartCat').innerHTML=barChart(byCat,'#1f6feb')||emptyMini();
+  const bySite={};A.forEach(a=>{if(a.Site)bySite[a.Site]=(bySite[a.Site]||0)+1;});
+  document.getElementById('chartSite').innerHTML=barChart(bySite,'#1a7f52')||emptyMini();
+}
+function barChart(obj,color){
+  const ent=Object.entries(obj);if(!ent.length)return '';
+  const max=Math.max(...ent.map(e=>e[1]));
+  return ent.map(([k,v])=>'<div class="bar-row"><span class="k">'+esc(k)+'</span><div class="bar-track"><div class="bar-fill" style="width:'+Math.round(v/max*100)+'%;background:'+color+'"></div></div><span class="v">'+v+'</span></div>').join('');
+}
+function emptyMini(){return '<p style="color:var(--text-3);font-size:13px;margin:6px 0">ยังไม่มีข้อมูล</p>';}
+
+function renderRegister(){
+  const site=val('fSite'),st=val('fStatus'),q=val('fSearch').toLowerCase();
+  const rows=DB.AssetRegister.filter(a=>
+    (!site||a.Site===site)&&(!st||a.Status===st)&&
+    (!q||[a['Finance Tag'],a['S/N'],a['Owner Name']].some(x=>String(x||'').toLowerCase().includes(q))));
+  document.getElementById('tblRegister').innerHTML=rows.length?rows.map(a=>
+    '<tr><td><span class="tag">'+esc(a['Finance Tag'])+'</span></td><td>'+esc(a.Brand)+' '+esc(a.Model)+'</td><td class="mono" style="font-size:12px">'+esc(a['S/N'])+'</td><td>'+(a['Owner Name']?esc(a['Owner Name']):'<span style="color:var(--text-3)">—</span>')+'</td><td>'+esc(a['Work Location']||'—')+'</td><td>'+esc(a.Site)+'</td><td>'+pill(a.Status)+'</td><td><button class="btn ghost" style="padding:4px 8px" onclick="modalEditAsset(\''+esc(a['Finance Tag'])+'\')">'+ic('edit')+'</button></td></tr>').join(''):emptyRow(8);
+}
+function renderPO(){
+  document.getElementById('tblPO').innerHTML=DB.PurchaseOrder.length?DB.PurchaseOrder.map(p=>{
+    const sc=p.Status==='Closed'?'instock':p.Status==='Partially Received'?'borrowed':'assigned';
+    return '<tr><td class="mono">'+esc(p['PO No.'])+'</td><td>'+esc(p['PO Date'])+'</td><td>'+esc(p.Vendor)+'</td><td>'+esc(p.Description)+'</td><td>'+esc(p['IT Asset Type'])+'</td><td class="mono">'+num(p.Qty)+'</td><td class="mono">'+num(p['Received Qty'])+'</td><td class="mono">'+money(p.Total)+'</td><td><span class="pill '+sc+'">'+esc(p.Status)+'</span></td></tr>';
+  }).join(''):emptyRow(9);
+}
+function renderReceiving(){
+  document.getElementById('tblReceiving').innerHTML=DB.Receiving.length?DB.Receiving.map(r=>
+    '<tr><td class="mono">'+esc(r['GR No.'])+'</td><td class="mono">'+esc(r['PO No.'])+'</td><td>'+esc(r['Receive Date'])+'</td><td><span class="tag">'+esc(r['Finance Tag'])+'</span></td><td class="mono" style="font-size:12px">'+esc(r['S/N'])+'</td><td>'+esc(r.Brand)+'</td><td>'+esc(r.Model)+'</td><td class="mono">'+money(r.Cost)+'</td><td>'+esc(r['IT Received'])+'</td></tr>').join(''):emptyRow(9);
+}
+function renderTransfer(){
+  document.getElementById('tblTransfer').innerHTML=DB.TransferDocument.length?DB.TransferDocument.map(d=>{
+    const items=DB.TransferItems.filter(i=>i['Document No.']===d['Document No.']).length;
+    const tc=d.Type==='Transfer'?'type-t':'type-b';
+    const sc=d['Doc Status']==='Returned'?'instock':'assigned';
+    return '<tr><td class="mono">'+esc(d['Document No.'])+'</td><td>'+esc(d['Document Date'])+'</td><td><span class="badge '+tc+'">'+esc(d.Type)+'</span></td><td>'+esc(d['Employee Name'])+'</td><td>'+esc(d.Department)+'</td><td class="mono">'+items+'</td><td><span class="pill '+sc+'">'+esc(d['Doc Status'])+'</span></td></tr>';
+  }).join(''):emptyRow(7);
+}
+function renderReturn(){
+  const open=DB.TransferDocument.filter(d=>d.Type==='Borrow'&&d['Doc Status']!=='Returned');
+  document.getElementById('tblReturn').innerHTML=open.length?open.map(d=>{
+    const items=DB.TransferItems.filter(i=>i['Document No.']===d['Document No.']).length;
+    return '<tr><td class="mono">'+esc(d['Document No.'])+'</td><td>'+esc(d['Document Date'])+'</td><td>'+esc(d['Employee Name'])+'</td><td class="mono">'+items+'</td><td>'+pill('Borrowed')+'</td><td><button class="btn pri" style="padding:5px 12px" onclick="modalReturn(\''+esc(d['Document No.'])+'\')">'+ic('undo')+'รับคืน</button></td></tr>';
+  }).join(''):emptyRow(6,'ไม่มีเอกสารยืมที่ค้างคืน');
+}
+function renderHistory(){
+  const q=val('hSearch').toLowerCase();
+  const rows=DB.AssetHistory.filter(h=>!q||[h['Finance Tag'],h['Transaction Type'],h['Document No.']].some(x=>String(x||'').toLowerCase().includes(q))).slice().reverse();
+  document.getElementById('tblHistory').innerHTML=rows.length?rows.map(h=>
+    '<tr><td class="mono" style="font-size:12px">'+esc(h['Transaction ID'])+'</td><td>'+esc(h.Date)+'</td><td><span class="tag">'+esc(h['Finance Tag'])+'</span></td><td>'+esc(h['Transaction Type'])+'</td><td>'+esc(h.From)+'</td><td>'+esc(h.To)+'</td><td>'+esc(h.Employee||'—')+'</td><td class="mono">'+esc(h['Document No.']||'—')+'</td></tr>').join(''):emptyRow(8);
+}
+function renderEmployees(){
+  const q=val('eSearch').toLowerCase();
+  const rows=DB.Employees.filter(e=>!q||[e['Employee ID'],e.Name,e.Department].some(x=>String(x||'').toLowerCase().includes(q)));
+  document.getElementById('tblEmployees').innerHTML=rows.length?rows.map(e=>{
+    const act=String(e.Active)!=='No';
+    return '<tr><td class="mono">'+esc(e['Employee ID'])+'</td><td>'+esc(e.Name)+'</td><td>'+esc(e.Position)+'</td><td>'+esc(e.Department)+'</td><td>'+esc(e.Site)+'</td><td class="mono" style="font-size:12px">'+esc(e['Mobile Phone No.']||'—')+'</td><td><span class="pill '+(act?'instock':'lost')+'">'+(act?'Active':'Inactive')+'</span></td><td><button class="btn ghost" style="padding:4px 8px" onclick="modalEmployee(\''+esc(e['Employee ID'])+'\')">'+ic('edit')+'</button></td></tr>';
+  }).join(''):emptyRow(8);
+}
+function renderModels(){
+  document.getElementById('tblModels').innerHTML=DB.DeviceModels.length?DB.DeviceModels.map(m=>
+    '<tr><td style="font-weight:500">'+esc(m['Model Name'])+'</td><td><span class="badge '+(m['Device Type']==='NB'?'type-b':'type-t')+'">'+esc(m['Device Type'])+'</span></td><td>'+esc(m.Brand)+'</td><td style="font-size:12px">'+esc(m.Processor)+'</td><td>'+esc(m.Memory)+'</td><td>'+esc(m.Storage)+'</td><td class="mono">'+money(m['Standard Cost'])+'</td><td class="mono">'+esc(m['Warranty Years'])+' ปี</td><td><button class="btn ghost" style="padding:4px 8px" onclick="modalModel(\''+esc(m['Model Name'])+'\')">'+ic('edit')+'</button></td></tr>').join(''):emptyRow(9);
+}
+function emptyRow(cols,msg){return '<tr><td colspan="'+cols+'" class="empty">'+(msg||'ยังไม่มีข้อมูล')+'</td></tr>';}
+function val(id){return (document.getElementById(id)||{value:''}).value;}
+
+// ================= MODALS =================
+function showModal(html,wide){
+  document.getElementById('modal').className='modal'+(wide?' wide':'');
+  document.getElementById('modal').innerHTML=html;
+  document.getElementById('overlay').classList.add('open');
+}
+function closeModal(){document.getElementById('overlay').classList.remove('open');}
+document.getElementById('overlay').addEventListener('click',e=>{if(e.target.id==='overlay')closeModal();});
+function mHead(t){return '<div class="modal-h"><h3>'+t+'</h3><button class="x" onclick="closeModal()">'+ic('x')+'</button></div>';}
+function f(label,id,attrs){return '<div class="field"><label>'+label+'</label><input class="inp" id="'+id+'" '+(attrs||'')+'></div>';}
+function sel(label,id,opts,cur){return '<div class="field"><label>'+label+'</label><select class="inp" id="'+id+'">'+opts.map(o=>'<option'+(o===cur?' selected':'')+'>'+o+'</option>').join('')+'</select></div>';}
+
+function modalEmployee(id){
+  const e=id?DB.Employees.find(x=>x['Employee ID']===id):{};
+  showModal(mHead(id?'แก้ไขพนักงาน':'เพิ่มพนักงานใหม่')+
+    '<div class="modal-b"><div class="grid2">'+
+    f('Employee ID *','e_id',(id?'value="'+esc(e['Employee ID'])+'" disabled':''))+
+    f('ชื่อ-นามสกุล *','e_name','value="'+esc(e.Name||'')+'"')+
+    f('ตำแหน่ง','e_pos','value="'+esc(e.Position||'')+'"')+
+    sel('Site','e_site',SITES,e.Site)+
+    f('แผนก','e_dept','value="'+esc(e.Department||'')+'"')+
+    f('เบอร์โทร','e_phone','value="'+esc(e['Mobile Phone No.']||'')+'"')+
+    f('วันเริ่มงาน','e_join','type="date" value="'+esc(e['Join Date']||'')+'"')+
+    sel('สถานะ','e_active',['Yes','No'],e.Active==='No'?'No':'Yes')+
+    '</div></div>'+
+    '<div class="modal-f"><button class="btn ghost" onclick="closeModal()">ยกเลิก</button><button class="btn pri" onclick="saveEmployee(\''+(id||'')+'\')">บันทึก</button></div>');
+}
+async function saveEmployee(id){
+  const p={'Employee ID':id||val('e_id'),'Name':val('e_name'),'Position':val('e_pos'),'Department':val('e_dept'),'Site':val('e_site'),'Join Date':val('e_join'),'Mobile Phone No.':val('e_phone'),'Active':val('e_active')};
+  if(!p['Employee ID']||!p.Name){toast('กรอก Employee ID และชื่อ',1);return;}
+  const r=await apiPost(id?'updateEmployee':'addEmployee',p);
+  if(DEMO){if(id){Object.assign(DB.Employees.find(x=>x['Employee ID']===id),p);}else{if(DB.Employees.some(x=>x['Employee ID']===p['Employee ID'])){toast('Employee ID ซ้ำ',1);return;}DB.Employees.push(p);}}
+  finishSave(r,'บันทึกพนักงานแล้ว');
+}
+
+function modalModel(name){
+  const m=name?DB.DeviceModels.find(x=>x['Model Name']===name):{};
+  showModal(mHead(name?'แก้ไขรุ่นอุปกรณ์':'เพิ่มรุ่นอุปกรณ์')+
+    '<div class="modal-b"><div class="grid2">'+
+    f('Model Name *','m_name',(name?'value="'+esc(m['Model Name'])+'" disabled':''))+
+    sel('ประเภท','m_type',['NB','PC'],m['Device Type'])+
+    f('Brand','m_brand','value="'+esc(m.Brand||'')+'"')+
+    f('Product Name','m_prod','value="'+esc(m['Product Name']||'')+'"')+
+    f('OS','m_os','value="'+esc(m.OS||'')+'"')+
+    f('Processor','m_cpu','value="'+esc(m.Processor||'')+'"')+
+    f('LCD','m_lcd','value="'+esc(m.LCD||'')+'"')+
+    f('Graphics','m_gpu','value="'+esc(m.Graphics||'')+'"')+
+    f('Memory','m_mem','value="'+esc(m.Memory||'')+'"')+
+    f('Storage','m_sto','value="'+esc(m.Storage||'')+'"')+
+    f('Standard Cost','m_cost','type="number" value="'+esc(m['Standard Cost']||'')+'"')+
+    f('Warranty (ปี)','m_war','type="number" value="'+esc(m['Warranty Years']||'')+'"')+
+    f('ราคา Adaptor','m_adp','type="number" value="'+esc(m['Standard Adaptor Price']||'')+'"')+
+    f('ราคา Mouse','m_mou','type="number" value="'+esc(m['Standard Mouse Price']||'')+'"')+
+    '</div></div>'+
+    '<div class="modal-f"><button class="btn ghost" onclick="closeModal()">ยกเลิก</button><button class="btn pri" onclick="saveModel(\''+(name||'')+'\')">บันทึก</button></div>');
+}
+async function saveModel(name){
+  const p={'Model Name':name||val('m_name'),'Device Type':val('m_type'),'Brand':val('m_brand'),'Product Name':val('m_prod'),'OS':val('m_os'),'Processor':val('m_cpu'),'LCD':val('m_lcd'),'Graphics':val('m_gpu'),'Memory':val('m_mem'),'Storage':val('m_sto'),'Standard Cost':val('m_cost'),'Standard Adaptor Price':val('m_adp'),'Standard Mouse Price':val('m_mou'),'Warranty Years':val('m_war')};
+  if(!p['Model Name']){toast('กรอกชื่อรุ่น',1);return;}
+  const r=await apiPost(name?'updateModel':'addModel',p);
+  if(DEMO){if(name){Object.assign(DB.DeviceModels.find(x=>x['Model Name']===name),p);}else{DB.DeviceModels.push(p);}}
+  finishSave(r,'บันทึกรุ่นแล้ว');
+}
+
+function modalPO(){
+  showModal(mHead('สร้าง Purchase Order')+
+    '<div class="modal-b"><div class="grid2">'+
+    f('Vendor','po_vendor','')+f('Item Code','po_code','')+
+    f('Description','po_desc','')+f('IT Asset Type','po_type','')+
+    f('Qty','po_qty','type="number"')+f('Unit Price','po_price','type="number"')+
+    f('Expected Date','po_exp','type="date"')+
+    '</div></div>'+
+    '<div class="modal-f"><button class="btn ghost" onclick="closeModal()">ยกเลิก</button><button class="btn pri" onclick="savePO()">สร้าง</button></div>');
+}
+async function savePO(){
+  const qty=num(val('po_qty')),price=num(val('po_price'));
+  const p={'Vendor':val('po_vendor'),'Item Code':val('po_code'),'Description':val('po_desc'),'IT Asset Type':val('po_type'),'Qty':qty,'Unit Price':price,'Expected Date':val('po_exp')};
+  const r=await apiPost('addPO',p);
+  if(DEMO){const n='PO-'+String(DB.PurchaseOrder.length+1).padStart(3,'0');DB.PurchaseOrder.push(Object.assign({'PO No.':n,'PO Date':td(),'Total':qty*price,'Received Qty':0,'Status':'Open'},p));}
+  finishSave(r,'สร้าง PO แล้ว');
+}
+
+function modalReceiving(){
+  const pos=DB.PurchaseOrder.filter(p=>p.Status!=='Closed');
+  showModal(mHead('รับของเข้าคลัง')+
+    '<div class="modal-b"><div class="grid2">'+
+    '<div class="field"><label>PO No.</label><select class="inp" id="gr_po"><option value="">— ไม่อ้างอิง PO —</option>'+pos.map(p=>'<option>'+p['PO No.']+'</option>').join('')+'</select></div>'+
+    sel('Site','gr_site',SITES)+
+    f('Finance Tag *','gr_tag','')+f('S/N','gr_sn','')+
+    f('Brand','gr_brand','')+f('Model','gr_model','')+
+    f('Invoice No.','gr_inv','')+f('Service/Exp Date','gr_exp','type="date"')+
+    sel('Condition','gr_cond',['New','Good','Fair'])+f('IT Received','gr_by','')+
+    '</div></div>'+
+    '<div class="modal-f"><button class="btn ghost" onclick="closeModal()">ยกเลิก</button><button class="btn pri" onclick="saveReceiving()">รับเข้า</button></div>');
+}
+async function saveReceiving(){
+  const tag=val('gr_tag');if(!tag){toast('กรอก Finance Tag',1);return;}
+  const p={'PO No.':val('gr_po'),'Site':val('gr_site'),'Finance Tag':tag,'S/N':val('gr_sn'),'Brand':val('gr_brand'),'Model':val('gr_model'),'Invoice No.':val('gr_inv'),'Service/Expiration Date':val('gr_exp'),'Condition':val('gr_cond'),'IT Received':val('gr_by')};
+  const r=await apiPost('addReceiving',p);
+  if(DEMO){
+    if(DB.AssetRegister.some(a=>a['Finance Tag']===tag)){toast('Finance Tag ซ้ำ',1);return;}
+    const gn='GR-'+String(DB.Receiving.length+1).padStart(3,'0');
+    DB.Receiving.push({'GR No.':gn,'PO No.':p['PO No.'],'Receive Date':td(),'Finance Tag':tag,'S/N':p['S/N'],'Brand':p.Brand,'Model':p.Model,'Cost':0,'Condition':p.Condition,'IT Received':p['IT Received']});
+    DB.AssetRegister.push({'No.':DB.AssetRegister.length+1,'Site':p.Site,'Asset Type':p.Model,'IT Asset Type':p.Model,'Brand':p.Brand,'Model':p.Model,'S/N':p['S/N'],'Finance Tag':tag,'Received Date':td(),'Status':'In Stock','Work Location':p.Site+' Office','row_id':'r'+Date.now()});
+    DB.AssetHistory.push({'Transaction ID':'TXN-'+String(DB.AssetHistory.length+1).padStart(4,'0'),'Date':td(),'Finance Tag':tag,'Transaction Type':'Received','From':'Vendor','To':'Stock','Employee':p['IT Received'],'Document No.':p['PO No.']});
+  }
+  finishSave(r,'รับของเข้าคลังแล้ว');
+}
+
+function modalEditAsset(tag){
+  const a=DB.AssetRegister.find(x=>x['Finance Tag']===tag);if(!a)return;
+  showModal(mHead('แก้ไขทรัพย์สิน · '+tag)+
+    '<div class="modal-b"><div class="grid2">'+
+    f('Work Location','ea_loc','value="'+esc(a['Work Location']||'')+'"')+
+    sel('Status','ea_status',STAT_LIST,a.Status)+
+    f('Service/Exp Date','ea_exp','type="date" value="'+esc(a['Service/Expiration Date']||'')+'"')+
+    f('Remark','ea_remark','value="'+esc(a.Remark||'')+'"')+
+    '</div></div>'+
+    '<div class="modal-f"><button class="btn ghost" onclick="closeModal()">ยกเลิก</button><button class="btn pri" onclick="saveEditAsset(\''+esc(tag)+'\')">บันทึก</button></div>');
+}
+async function saveEditAsset(tag){
+  const p={'Finance Tag':tag,'Work Location':val('ea_loc'),'Status':val('ea_status'),'Service/Expiration Date':val('ea_exp'),'Remark':val('ea_remark')};
+  const r=await apiPost('editAsset',p);
+  if(DEMO){Object.assign(DB.AssetRegister.find(x=>x['Finance Tag']===tag),{'Work Location':p['Work Location'],'Status':p.Status,'Service/Expiration Date':p['Service/Expiration Date'],'Remark':p.Remark});}
+  finishSave(r,'แก้ไขแล้ว');
+}
+
+let TR_ITEMS=[];
+function modalTransfer(){
+  TR_ITEMS=[];
+  const emps=DB.Employees.filter(e=>String(e.Active)!=='No');
+  showModal(mHead('สร้างเอกสาร Transfer / Borrow')+
+    '<div class="modal-b">'+
+    '<div class="grid2">'+
+    '<div class="field"><label>Employee ID *</label><select class="inp" id="tr_emp" onchange="fillEmp()"><option value="">— เลือก —</option>'+emps.map(e=>'<option value="'+e['Employee ID']+'">'+e['Employee ID']+' · '+e.Name+'</option>').join('')+'</select></div>'+
+    sel('Type','tr_type',['Borrow','Transfer'])+
+    f('ชื่อ (auto)','tr_name','disabled')+f('แผนก / Site (auto)','tr_dept','disabled')+
+    f('IT Support (ผู้จัดทำ)','tr_by','')+f('Supervisor','tr_sup','')+
+    '</div>'+
+    '<div style="margin:18px 0 8px;display:flex;justify-content:space-between;align-items:center"><label style="font-size:12px;font-weight:600;color:var(--text-2)">รายการอุปกรณ์ (In Stock)</label><button class="btn" style="padding:5px 11px" onclick="addTrItem()">'+ic('plus')+'เพิ่มเครื่อง</button></div>'+
+    '<div class="tbl-wrap" style="box-shadow:none"><table><thead><tr><th style="width:40px">#</th><th>Finance Tag</th><th>Device</th><th></th></tr></thead><tbody id="trItems"><tr><td colspan="4" class="empty" style="padding:20px">ยังไม่มีรายการ</td></tr></tbody></table></div>'+
+    '</div>'+
+    '<div class="modal-f"><button class="btn ghost" onclick="closeModal()">ยกเลิก</button><button class="btn pri" onclick="saveTransfer()">สร้างเอกสาร</button></div>',true);
+}
+function fillEmp(){
+  const e=DB.Employees.find(x=>x['Employee ID']===val('tr_emp'));
+  if(e){document.getElementById('tr_name').value=e.Name;document.getElementById('tr_dept').value=e.Department+' · '+e.Site;}
+}
+function addTrItem(){
+  const avail=DB.AssetRegister.filter(a=>a.Status==='In Stock'&&!TR_ITEMS.some(t=>t.tag===a['Finance Tag']));
+  if(!avail.length){toast('ไม่มีอุปกรณ์ In Stock เหลือ',1);return;}
+  TR_ITEMS.push({tag:avail[0]['Finance Tag']});
+  renderTrItems();
+}
+function renderTrItems(){
+  const avail=DB.AssetRegister.filter(a=>a.Status==='In Stock');
+  document.getElementById('trItems').innerHTML=TR_ITEMS.length?TR_ITEMS.map((it,i)=>{
+    const opts=avail.filter(a=>a['Finance Tag']===it.tag||!TR_ITEMS.some(t=>t.tag===a['Finance Tag']));
+    return '<tr><td class="mono">'+(i+1)+'</td><td><select class="inp" onchange="TR_ITEMS['+i+'].tag=this.value">'+avail.map(a=>'<option value="'+a['Finance Tag']+'"'+(a['Finance Tag']===it.tag?' selected':'')+'>'+a['Finance Tag']+'</option>').join('')+'</select></td><td style="font-size:12px;color:var(--text-2)" id="trdev'+i+'">'+trDev(it.tag)+'</td><td><button class="x" onclick="TR_ITEMS.splice('+i+',1);renderTrItems()">'+ic('trash')+'</button></td></tr>';
+  }).join(''):'<tr><td colspan="4" class="empty" style="padding:20px">ยังไม่มีรายการ</td></tr>';
+}
+function trDev(tag){const a=DB.AssetRegister.find(x=>x['Finance Tag']===tag);return a?esc(a.Brand+' '+a.Model):'';}
+async function saveTransfer(){
+  const eid=val('tr_emp');if(!eid){toast('เลือกพนักงาน',1);return;}
+  if(!TR_ITEMS.length){toast('เพิ่มอุปกรณ์อย่างน้อย 1 เครื่อง',1);return;}
+  const e=DB.Employees.find(x=>x['Employee ID']===eid);
+  const type=val('tr_type');
+  const header={'Employee ID':eid,'Employee Name':e.Name,'Position':e.Position,'Department':e.Department,'Site':e.Site,'Type':type,'Created By':val('tr_by'),'Supervisor Name':val('tr_sup'),'Transfer Date':td()};
+  const items=TR_ITEMS.map((it,i)=>{const a=DB.AssetRegister.find(x=>x['Finance Tag']===it.tag);return {'Finance Tag':it.tag,'Device':a['Asset Type'],'Brand':a.Brand,'Model':a.Model,'Serial Number':a['S/N']};});
+  const r=await apiPost('createTransfer',{header,items});
+  if(DEMO){
+    const yr=new Date().getFullYear();
+    const cnt=DB.TransferDocument.filter(d=>d.Site===e.Site&&String(d['Document No.']).includes('-'+yr)).length+1;
+    const docNo=e.Site+String(cnt).padStart(2,'0')+'-'+yr;
+    DB.TransferDocument.push(Object.assign({'Document No.':docNo,'Document Date':td(),'Doc Status':'Open'},header));
+    items.forEach((it,i)=>{
+      DB.TransferItems.push(Object.assign({'Document No.':docNo,'No.':i+1},it));
+      const a=DB.AssetRegister.find(x=>x['Finance Tag']===it['Finance Tag']);
+      Object.assign(a,{'Status':type==='Transfer'?'Assigned':'Borrowed','Employee ID':eid,'Owner Name':e.Name,'Department':e.Department,'Document No.':docNo});
+      DB.AssetHistory.push({'Transaction ID':'TXN-'+String(DB.AssetHistory.length+1).padStart(4,'0'),'Date':td(),'Finance Tag':it['Finance Tag'],'Transaction Type':type==='Transfer'?'Transferred':'Borrowed','From':'Stock','To':e.Name,'Employee':e.Name,'Department':e.Department,'Document No.':docNo});
+    });
+  }
+  finishSave(r,'สร้างเอกสารแล้ว');
+}
+
+function modalReturn(docNo){
+  showModal(mHead('รับคืนอุปกรณ์ · '+docNo)+
+    '<div class="modal-b"><div class="grid2">'+
+    f('ผู้คืน (Employee Name Return)','rt_name','')+
+    f('วันที่คืน','rt_date','type="date" value="'+td()+'"')+
+    '</div></div>'+
+    '<div class="modal-f"><button class="btn ghost" onclick="closeModal()">ยกเลิก</button><button class="btn pri" onclick="saveReturn(\''+esc(docNo)+'\')">ยืนยันรับคืน</button></div>');
+}
+async function saveReturn(docNo){
+  const p={'Document No.':docNo,'Employee Name Return':val('rt_name'),'Return Date':val('rt_date')};
+  const r=await apiPost('markReturned',p);
+  if(DEMO){
+    const d=DB.TransferDocument.find(x=>x['Document No.']===docNo);
+    Object.assign(d,{'Doc Status':'Returned','Return Date':p['Return Date'],'Employee Name Return':p['Employee Name Return']});
+    DB.TransferItems.filter(i=>i['Document No.']===docNo).forEach(it=>{
+      const a=DB.AssetRegister.find(x=>x['Finance Tag']===it['Finance Tag']);
+      if(a)Object.assign(a,{'Status':'In Stock','Employee ID':'','Owner Name':'','Department':'','Document No.':''});
+      DB.AssetHistory.push({'Transaction ID':'TXN-'+String(DB.AssetHistory.length+1).padStart(4,'0'),'Date':td(),'Finance Tag':it['Finance Tag'],'Transaction Type':'Returned','From':p['Employee Name Return'],'To':'Stock','Document No.':docNo});
+    });
+  }
+  finishSave(r,'รับคืนเรียบร้อย');
+}
+
+function finishSave(r,okMsg){
+  if(r&&r.success===false){toast('ไม่สำเร็จ: '+r.code,1);return;}
+  closeModal();
+  if(!DEMO){reload();}else{renderAll();}
+  toast(okMsg);
+}
+
+// ================= PRINT =================
+function onTemplateChange(){
+  const t=val('pTemplate');const sel=document.getElementById('pDoc');
+  if(t==='transfer'){
+    sel.innerHTML='<option value="">เลือกเอกสาร…</option>'+DB.TransferDocument.map(d=>'<option>'+d['Document No.']+'</option>').join('');
+    sel.onchange=()=>renderTransferPrint(sel.value);
+  }else if(t==='receipt'||t==='spec'){
+    sel.innerHTML='<option value="">เลือกพนักงาน…</option>'+DB.Employees.map(e=>'<option value="'+e['Employee ID']+'">'+e['Employee ID']+' · '+e.Name+'</option>').join('');
+    sel.onchange=()=> t==='receipt'?renderReceiptPrint(sel.value):renderSpecPrint(sel.value);
+  }else{sel.innerHTML='';}
+  document.getElementById('printArea').innerHTML='<div class="empty">เลือกเอกสาร/พนักงานเพื่อแสดงตัวอย่าง</div>';
+}
+function renderTransferPrint(docNo){
+  const d=DB.TransferDocument.find(x=>x['Document No.']===docNo);if(!d)return;
+  const items=DB.TransferItems.filter(i=>i['Document No.']===docNo);
+  document.getElementById('printArea').innerHTML=
+  '<div class="doc-wrap"><div class="doc-title"><h2>ใบรับ-ส่งมอบอุปกรณ์ IT</h2><p>IT Equipment Transfer / Borrow Form · '+esc(d.Type)+'</p></div>'+
+  '<div class="doc-meta">'+
+  row('Document No.',d['Document No.'])+row('Document Date',d['Document Date'])+
+  row('Employee',d['Employee Name'])+row('Employee ID',d['Employee ID'])+
+  row('Department',d.Department)+row('Position',d.Position)+
+  row('Transfer Date',d['Transfer Date'])+row('Created by',d['Created By'])+
+  '</div>'+
+  '<table class="doc-tbl"><thead><tr><th>No.</th><th>Finance Tag</th><th>Device</th><th>Brand / Model</th><th>Serial Number</th></tr></thead><tbody>'+
+  items.map(i=>'<tr><td>'+i['No.']+'</td><td>'+esc(i['Finance Tag'])+'</td><td>'+esc(i.Device)+'</td><td>'+esc(i.Brand+' '+i.Model)+'</td><td>'+esc(i['Serial Number'])+'</td></tr>').join('')+
+  '</tbody></table>'+
+  '<div class="sign-row"><div class="sign"><div class="line"></div><p><b>'+esc(d['Created By']||'')+'</b></p><p>ผู้ส่งมอบ (Issued By)</p></div><div class="sign"><div class="line"></div><p><b>'+esc(d['Employee Name'])+'</b></p><p>ผู้รับมอบ (Received By)</p></div></div>'+
+  (d.Type==='Transfer'?'<div class="sign-row" style="margin-top:36px"><div class="sign"><div class="line"></div><p>Manager / Sr.Manager</p></div><div class="sign"><div class="line"></div><p>IT Support</p></div></div>':'')+
+  '</div>';
+}
+function renderReceiptPrint(eid){
+  const e=DB.Employees.find(x=>x['Employee ID']===eid);if(!e)return;
+  const assets=DB.AssetRegister.filter(a=>a['Employee ID']===eid);
+  document.getElementById('printArea').innerHTML=
+  '<div class="doc-wrap"><div class="doc-title"><h2>ใบรับ-คืนทรัพย์สินบริษัทฯ</h2><p>Company Asset Receipt and Return Form</p></div>'+
+  '<div class="doc-meta">'+row('Employee',e.Name)+row('Employee ID',e['Employee ID'])+row('Department',e.Department)+row('Site',e.Site)+row('Position',e.Position)+row('Join Date',e['Join Date'])+row('Mobile',e['Mobile Phone No.'])+'</div>'+
+  '<table class="doc-tbl"><thead><tr><th>Finance Tag</th><th>Item</th><th>Brand / Model</th><th>S/N</th></tr></thead><tbody>'+
+  (assets.length?assets.map(a=>'<tr><td>'+esc(a['Finance Tag'])+'</td><td>'+esc(a['Asset Type'])+'</td><td>'+esc(a.Brand+' '+a.Model)+'</td><td>'+esc(a['S/N'])+'</td></tr>').join(''):'<tr><td colspan="4" style="text-align:center;color:#888">— ไม่มีทรัพย์สิน IT ที่ผูกกับพนักงานนี้ —</td></tr>')+
+  '</tbody></table>'+
+  '<p style="font-size:11.5px;color:var(--text-2)">หมายเหตุ: รายการนอก IT (รถ, บัตรจอดรถ, Fleet Card, Easy Pass, ยูนิฟอร์ม, บัตรประกัน ฯลฯ) กรอกด้วยมือบนเอกสารที่พิมพ์</p>'+
+  '<div class="sign-row"><div class="sign"><div class="line"></div><p>ผู้รับทรัพย์สิน</p></div><div class="sign"><div class="line"></div><p>ผู้จัดการแผนก (Manager / HOD)</p></div></div>'+
+  '<div class="sign-row" style="margin-top:36px"><div class="sign"><div class="line"></div><p>แผนก HR</p></div><div class="sign"><div class="line"></div><p>แผนก IT</p></div></div>'+
+  '</div>';
+}
+function renderSpecPrint(eid){
+  const e=DB.Employees.find(x=>x['Employee ID']===eid);if(!e)return;
+  const asset=DB.AssetRegister.find(a=>a['Employee ID']===eid);
+  const model=asset?DB.DeviceModels.find(m=>m['Model Name']===asset.Model):null;
+  const specRows=model?[['Product Name',model['Product Name']],['OS',model.OS],['Processor',model.Processor],['LCD',model.LCD],['Graphics',model.Graphics],['Memory',model.Memory],['Storage',model.Storage],['Cost / Set',money(model['Standard Cost'])+' Baht'],['Warranty',model['Warranty Years']+' ปี']]:[];
+  document.getElementById('printArea').innerHTML=
+  '<div class="doc-wrap"><div class="doc-title"><h2>Details of Component Equipment</h2><p>Acknowledge and Receive · Handover Spec Sheet</p></div>'+
+  '<div class="doc-meta">'+row('Employee ID',e['Employee ID'])+row('Name',e.Name)+row('Position',e.Position)+row('Site',e.Site)+row('Finance Tag',asset?asset['Finance Tag']:'—')+row('Serial Number',asset?asset['S/N']:'—')+'</div>'+
+  (model?'<table class="doc-tbl"><tbody>'+specRows.map(r=>'<tr><td style="width:180px;background:#f7f8fb;font-weight:500">'+esc(r[0])+'</td><td>'+esc(r[1])+'</td></tr>').join('')+'</tbody></table>':'<p style="color:#b3261e">พนักงานนี้ยังไม่มีเครื่องที่ผูกรุ่นใน Device Models — เลือกเครื่องที่รุ่นถูกลงทะเบียนไว้</p>')+
+  '<p style="font-size:11.5px;color:var(--text-2);margin-top:8px">User &amp; Password สำหรับ First Time Login: เว้นว่างให้ IT กรอกด้วยมือตอนพิมพ์ (ไม่เก็บในระบบ)</p>'+
+  '<div class="sign-row"><div class="sign"><div class="line"></div><p>Employee Acknowledge &amp; Receive</p></div><div class="sign"><div class="line"></div><p>Sender by (IT)</p></div></div>'+
+  '</div>';
+}
+function row(k,v){return '<div class="row"><b>'+k+':</b><span>'+esc(v||'—')+'</span></div>';}
+
+// ================= SETTINGS =================
+function openSettings(){
+  showModal(mHead('ตั้งค่า Backend')+
+    '<div class="modal-b">'+
+    '<div class="field"><label>Google Apps Script Web App URL</label><input class="inp" id="set_url" placeholder="https://script.google.com/macros/s/.../exec" value="'+esc(BACKEND_URL)+'"></div>'+
+    '<p style="font-size:12px;color:var(--text-2);margin:12px 0 0">เว้นว่างไว้ = ใช้ <b>Demo mode</b> (ข้อมูลตัวอย่างในเครื่อง ไม่บันทึกจริง)<br>ใส่ URL หลัง deploy GAS แล้ว = เชื่อมข้อมูลจริงจาก Google Sheets</p>'+
+    '</div>'+
+    '<div class="modal-f"><button class="btn ghost" onclick="closeModal()">ยกเลิก</button><button class="btn pri" onclick="saveSettings()">บันทึกและโหลดใหม่</button></div>');
+}
+function saveSettings(){
+  const u=val('set_url').trim();
+  localStorage.setItem('it_asset_url',u);
+  BACKEND_URL=u;DEMO=!u;
+  closeModal();reload();
+}
+function updateConn(){
+  document.getElementById('connDot').classList.toggle('live',!DEMO);
+  document.getElementById('connTxt').textContent=DEMO?'Demo mode':'เชื่อมต่อแล้ว';
+}
+
+// ================= TOAST =================
+let toastT;
+function toast(msg,err){
+  const t=document.getElementById('toast');
+  t.className='show'+(err?' err':'');
+  t.innerHTML=(err?ic('x'):ic('check'))+'<span>'+esc(msg)+'</span>';
+  clearTimeout(toastT);toastT=setTimeout(()=>t.className='',2600);
+}
+
+// ================= BOOT =================
+function td(){return new Date().toISOString().split('T')[0];}
+function paintIcons(){document.querySelectorAll('[data-ic]').forEach(el=>{if(!el.dataset.painted){el.innerHTML=ic(el.dataset.ic);el.dataset.painted='1';}});}
+async function reload(){
+  try{await apiGet();}catch(e){toast('โหลดข้อมูลไม่สำเร็จ ใช้ Demo แทน',1);DEMO=true;seedDemo();}
+  updateConn();renderAll();paintIcons();
+}
+paintIcons();
+reload();
+</script>
+</body>
+</html>
