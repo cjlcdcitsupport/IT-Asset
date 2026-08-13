@@ -150,6 +150,25 @@
   .sign{text-align:center}
   .sign .line{border-bottom:1px solid #333;height:44px;margin-bottom:8px}
   .sign p{font-size:12px;color:var(--text-2);margin:2px 0}
+  .split2{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:14px}
+  .sec-h{background:#dbe6f3;font-weight:700;padding:6px 11px;font-size:12.5px;border:1px solid #b7bfcf;border-bottom:none;color:#1a2438}
+  .official-box{border:1px solid #b7bfcf}
+  .official-box.g3{display:grid;grid-template-columns:1fr 1fr 1fr}
+  .official-box .row2{display:grid;grid-template-columns:118px 1fr;border-top:1px solid #b7bfcf}
+  .official-box .row2:first-child{border-top:none}
+  .official-box .cell3{padding:6px 10px;border-top:1px solid #b7bfcf;border-right:1px solid #b7bfcf;font-size:12px}
+  .official-box .cell3 b{display:block;color:var(--text-2);font-weight:600;font-size:11px;margin-bottom:1px}
+  .official-box .lbl{padding:6px 10px;font-size:12px;font-weight:600;color:var(--text-2);background:#f7f8fb;border-right:1px solid #b7bfcf}
+  .official-box .val{padding:6px 10px;font-size:12.5px}
+  .chk{display:inline-flex;align-items:center;gap:6px;margin-right:20px;font-size:12.5px;font-weight:600}
+  .chk .box{width:13px;height:13px;border:1.4px solid #333;display:inline-flex;align-items:center;justify-content:center;border-radius:2px;font-size:11px;line-height:1}
+  .chk.on .box::after{content:"✓"}
+  .policy{font-size:11.3px;line-height:1.75;color:#333;margin-top:20px}
+  .policy h4{font-size:12.5px;margin:18px 0 7px;color:var(--ink)}
+  .policy p{margin:3px 0}
+  .cred-box{border:1.4px solid #333;padding:10px 14px;margin:14px 0;font-size:12.5px;background:#fffceb}
+  .cred-box .r{display:flex;gap:10px;padding:3px 0}
+  .cred-box .r b{min-width:120px;color:var(--text-2);font-weight:600}
   @media print{
     .side,.top,.toolbar,.no-print{display:none!important}
     .app{grid-template-columns:1fr}
@@ -355,9 +374,9 @@ let DEMO=!BACKEND_URL;
 // ================= DEMO DATA =================
 function seedDemo(){
   DB.Employees=[
-    {'Employee ID':'TH061233','Name':'Mr. Jamorn Srisoontorn','Position':'Site Manager - DC Operation','Department':'WFDC Operations','Site':'WFDC','Join Date':'2020-05-01','Mobile Phone No.':'081-234-5678','Active':'Yes'},
-    {'Employee ID':'TH061693','Name':'Mr. Noppdon Chuaikhit','Position':'Supervisor - Reach Trucks Driver','Department':'WFDC Operations','Site':'WFDC','Join Date':'2026-07-16','Mobile Phone No.':'089-111-2222','Active':'Yes'},
-    {'Employee ID':'CD004512','Name':'Ms. Suda Wongsai','Position':'IT Support','Department':'CDC IT','Site':'CDC','Join Date':'2022-01-10','Mobile Phone No.':'086-777-8888','Active':'Yes'}
+    {'Employee ID':'TH061233','Name':'Mr. Jamorn Srisoontorn','Position':'Site Manager - DC Operation','Department':'WFDC Operations','Site':'WFDC','Join Date':'2020-05-01','Mobile Phone No.':'081-234-5678','Email':'jamorn.sr@cj.net','CJ World ID':'jamornsr','CJ World Password':'JaSr2201','Email Password':'cj87654321','Active':'Yes'},
+    {'Employee ID':'TH061693','Name':'Mr. Noppdon Chuaikhit','Position':'Supervisor-Reach Trucks Driver','Department':'CP Biz./CDC','Site':'WFDC','Join Date':'2026-07-16','Mobile Phone No.':'089-111-2222','Email':'noppdon.ch@cj.net','CJ World ID':'noppdonch','CJ World Password':'NoDo1315','Email Password':'cj12345678','Active':'Yes'},
+    {'Employee ID':'CD004512','Name':'Ms. Suda Wongsai','Position':'IT Support','Department':'CDC IT','Site':'CDC','Join Date':'2022-01-10','Mobile Phone No.':'086-777-8888','Email':'suda.wo@cj.net','CJ World ID':'sudawo','CJ World Password':'SuWo7788','Email Password':'cj11223344','Active':'Yes'}
   ];
   DB.DeviceModels=[
     {'Model Name':'HP ProBook 440 G10','Device Type':'NB','Brand':'HP','Product Name':'HP ProBook 440 G10','OS':'Win 11 Pro','Processor':'12th Gen Intel Core i7-1255U @1.70GHz','LCD':'14" FHD IPS 250 nits','Graphics':'Intel Iris Xe','Memory':'16 GB','Storage':'1 TB','Standard Cost':'31000','Standard Adaptor Price':'2118.60','Standard Mouse Price':'695.50','Warranty Years':'3'},
@@ -394,7 +413,10 @@ function seedDemo(){
   ];
 }
 function mkAsset(no,site,type,brand,model,sn,tag,status,eid,owner,dept,doc){
-  return {'No.':no,'Site':site,'Asset Type':type,'IT Asset Type':type,'Brand':brand,'Model':model,'S/N':sn,'Finance Tag':tag,'Received Date':'2026-06-20','Status':status,'Work Location':site+' Office','Employee ID':eid,'Owner Name':owner,'Department':dept,'Document No.':doc,'row_id':'r'+no};
+  const a={'No.':no,'Site':site,'Asset Type':type,'IT Asset Type':type,'Brand':brand,'Model':model,'S/N':sn,'Finance Tag':tag,'Received Date':'2026-06-20','Service/Expiration Date':'2029-06-21','Status':status,'Work Location':site+' Office','Employee ID':eid,'Owner Name':owner,'Department':dept,'Document No.':doc,'row_id':'r'+no};
+  if(eid){a['Transfer Date']='2026-07-16';}
+  if(model==='HP ProBook 440 G10'){a['Mouse S/N']='NRG41PRC0063O018S';a['Adaptor S/N']='ADP-'+no;}
+  return a;
 }
 
 // ================= API =================
@@ -560,11 +582,18 @@ function modalEmployee(id){
     f('เบอร์โทร','e_phone','value="'+esc(e['Mobile Phone No.']||'')+'"')+
     f('วันเริ่มงาน','e_join','type="date" value="'+esc(e['Join Date']||'')+'"')+
     sel('สถานะ','e_active',['Yes','No'],e.Active==='No'?'No':'Yes')+
+    '</div>'+
+    '<div style="margin:18px 0 10px;padding-top:14px;border-top:1px solid var(--line-soft)"><label style="font-size:12px;font-weight:600;color:var(--text-2)">บัญชีใช้งาน / Login Credentials</label></div>'+
+    '<div class="grid2">'+
+    f('E-mail','e_email','value="'+esc(e.Email||'')+'"')+
+    f('CJ World ID','e_cjid','value="'+esc(e['CJ World ID']||'')+'"')+
+    f('CJ World Password','e_cjpw','value="'+esc(e['CJ World Password']||'')+'"')+
+    f('Email Password','e_emailpw','value="'+esc(e['Email Password']||'')+'"')+
     '</div></div>'+
-    '<div class="modal-f"><button class="btn ghost" onclick="closeModal()">ยกเลิก</button><button class="btn pri" onclick="saveEmployee(\''+(id||'')+'\')">บันทึก</button></div>');
+    '<div class="modal-f"><button class="btn ghost" onclick="closeModal()">ยกเลิก</button><button class="btn pri" onclick="saveEmployee(\''+(id||'')+'\')">บันทึก</button></div>',true);
 }
 async function saveEmployee(id){
-  const p={'Employee ID':id||val('e_id'),'Name':val('e_name'),'Position':val('e_pos'),'Department':val('e_dept'),'Site':val('e_site'),'Join Date':val('e_join'),'Mobile Phone No.':val('e_phone'),'Active':val('e_active')};
+  const p={'Employee ID':id||val('e_id'),'Name':val('e_name'),'Position':val('e_pos'),'Department':val('e_dept'),'Site':val('e_site'),'Join Date':val('e_join'),'Mobile Phone No.':val('e_phone'),'Email':val('e_email'),'CJ World ID':val('e_cjid'),'CJ World Password':val('e_cjpw'),'Email Password':val('e_emailpw'),'Active':val('e_active')};
   if(!p['Employee ID']||!p.Name){toast('กรอก Employee ID และชื่อ',1);return;}
   const r=await apiPost(id?'updateEmployee':'addEmployee',p);
   if(DEMO){if(id){Object.assign(DB.Employees.find(x=>x['Employee ID']===id),p);}else{if(DB.Employees.some(x=>x['Employee ID']===p['Employee ID'])){toast('Employee ID ซ้ำ',1);return;}DB.Employees.push(p);}}
@@ -674,6 +703,7 @@ function modalTransfer(){
     sel('Type','tr_type',['Borrow','Transfer'])+
     f('ชื่อ (auto)','tr_name','disabled')+f('แผนก / Site (auto)','tr_dept','disabled')+
     f('IT Support (ผู้จัดทำ)','tr_by','')+f('Supervisor','tr_sup','')+
+    f('Description','tr_desc','')+
     '</div>'+
     '<div style="margin:18px 0 8px;display:flex;justify-content:space-between;align-items:center"><label style="font-size:12px;font-weight:600;color:var(--text-2)">รายการอุปกรณ์ (In Stock)</label><button class="btn" style="padding:5px 11px" onclick="addTrItem()">'+ic('plus')+'เพิ่มเครื่อง</button></div>'+
     '<div class="tbl-wrap" style="box-shadow:none"><table><thead><tr><th style="width:40px">#</th><th>Finance Tag</th><th>Device</th><th></th></tr></thead><tbody id="trItems"><tr><td colspan="4" class="empty" style="padding:20px">ยังไม่มีรายการ</td></tr></tbody></table></div>'+
@@ -703,7 +733,7 @@ async function saveTransfer(){
   if(!TR_ITEMS.length){toast('เพิ่มอุปกรณ์อย่างน้อย 1 เครื่อง',1);return;}
   const e=DB.Employees.find(x=>x['Employee ID']===eid);
   const type=val('tr_type');
-  const header={'Employee ID':eid,'Employee Name':e.Name,'Position':e.Position,'Department':e.Department,'Site':e.Site,'Type':type,'Created By':val('tr_by'),'Supervisor Name':val('tr_sup'),'Transfer Date':td()};
+  const header={'Employee ID':eid,'Employee Name':e.Name,'Position':e.Position,'Department':e.Department,'Site':e.Site,'Type':type,'Created By':val('tr_by'),'Supervisor Name':val('tr_sup'),'Description':val('tr_desc'),'Transfer Date':td()};
   const items=TR_ITEMS.map((it,i)=>{const a=DB.AssetRegister.find(x=>x['Finance Tag']===it.tag);return {'Finance Tag':it.tag,'Device':a['Asset Type'],'Brand':a.Brand,'Model':a.Model,'Serial Number':a['S/N']};});
   const r=await apiPost('createTransfer',{header,items});
   if(DEMO){
@@ -763,22 +793,55 @@ function onTemplateChange(){
   }else{sel.innerHTML='';}
   document.getElementById('printArea').innerHTML='<div class="empty">เลือกเอกสาร/พนักงานเพื่อแสดงตัวอย่าง</div>';
 }
+function fmtDate(v){
+  if(!v)return '';
+  const d=new Date(v);
+  if(isNaN(d))return v;
+  const months=['January','February','March','April','May','June','July','August','September','October','November','December'];
+  return d.getDate()+' '+months[d.getMonth()]+' '+d.getFullYear();
+}
+function offRow(k,v){return '<div class="row2"><div class="lbl">'+k+'</div><div class="val">'+esc(v||'')+'</div></div>';}
+function sig(label,name,extra){return '<div class="sign"><div class="line"></div><p><b>'+esc(name||'')+'</b></p><p>'+label+'</p>'+(extra?'<p>'+extra+'</p>':'')+'<p style="font-size:11px">Date: ____________</p></div>';}
+
 function renderTransferPrint(docNo){
   const d=DB.TransferDocument.find(x=>x['Document No.']===docNo);if(!d)return;
   const items=DB.TransferItems.filter(i=>i['Document No.']===docNo);
+  const isTransfer=d.Type==='Transfer';
   document.getElementById('printArea').innerHTML=
-  '<div class="doc-wrap"><div class="doc-title"><h2>ใบรับ-ส่งมอบอุปกรณ์ IT</h2><p>IT Equipment Transfer / Borrow Form · '+esc(d.Type)+'</p></div>'+
-  '<div class="doc-meta">'+
-  row('Document No.',d['Document No.'])+row('Document Date',d['Document Date'])+
-  row('Employee',d['Employee Name'])+row('Employee ID',d['Employee ID'])+
-  row('Department',d.Department)+row('Position',d.Position)+
-  row('Transfer Date',d['Transfer Date'])+row('Created by',d['Created By'])+
+  '<div class="doc-wrap">'+
+  '<div style="font-weight:800;font-size:15px;letter-spacing:.5px;margin-bottom:10px">CJ <span style="color:var(--accent)">LOGISTICS</span></div>'+
+  '<div class="doc-title" style="margin-bottom:16px"><h2>IT Equipment Transfer/Borrow Form.</h2></div>'+
+  '<div class="split2">'+
+    '<div><div class="sec-h">Employee Information</div><div class="official-box">'+
+      offRow('Employee ID',d['Employee ID'])+offRow('Name',d['Employee Name'])+
+      offRow('Position',d.Position)+offRow('Department',d.Department)+offRow('Site',d.Site)+
+    '</div>'+
+    '<div style="margin-top:10px">'+
+      '<span class="chk'+(!isTransfer?' on':'')+'"><span class="box"></span>Borrow</span>'+
+      '<span class="chk'+(isTransfer?' on':'')+'"><span class="box"></span>Transfer</span>'+
+    '</div></div>'+
+    '<div><div class="sec-h">IT Support Information</div><div class="official-box">'+
+      offRow('Document No.',d['Document No.'])+offRow('Document Date',fmtDate(d['Document Date']))+
+      offRow('Created / Prepare by',d['Created By'])+offRow('Supervisor Name',d['Supervisor Name'])+
+      offRow('Transfer Date',fmtDate(d['Transfer Date']))+offRow('Description',d.Description)+
+    '</div></div>'+
   '</div>'+
-  '<table class="doc-tbl"><thead><tr><th>No.</th><th>Finance Tag</th><th>Device</th><th>Brand / Model</th><th>Serial Number</th></tr></thead><tbody>'+
-  items.map(i=>'<tr><td>'+i['No.']+'</td><td>'+esc(i['Finance Tag'])+'</td><td>'+esc(i.Device)+'</td><td>'+esc(i.Brand+' '+i.Model)+'</td><td>'+esc(i['Serial Number'])+'</td></tr>').join('')+
+  '<table class="doc-tbl" style="margin-top:6px"><thead><tr><th style="width:36px">No.</th><th>Device</th><th>Brand</th><th>Model</th><th>Serial Number</th><th>Remark</th></tr></thead><tbody>'+
+  items.map(i=>'<tr><td>'+i['No.']+'</td><td>'+esc(i.Device)+'</td><td>'+esc(i.Brand)+'</td><td>'+esc(i.Model)+'</td><td>'+esc(i['Serial Number'])+'</td><td>'+esc(i.Remark||'')+'</td></tr>').join('')+
   '</tbody></table>'+
-  '<div class="sign-row"><div class="sign"><div class="line"></div><p><b>'+esc(d['Created By']||'')+'</b></p><p>ผู้ส่งมอบ (Issued By)</p></div><div class="sign"><div class="line"></div><p><b>'+esc(d['Employee Name'])+'</b></p><p>ผู้รับมอบ (Received By)</p></div></div>'+
-  (d.Type==='Transfer'?'<div class="sign-row" style="margin-top:36px"><div class="sign"><div class="line"></div><p>Manager / Sr.Manager</p></div><div class="sign"><div class="line"></div><p>IT Support</p></div></div>':'')+
+  (isTransfer?
+    '<div class="policy"><h4>Part II : Transfer IT asset/equipment is permanent</h4>'+
+    '<div class="sign-row" style="margin-top:20px">'+
+      sig('Employee Name Received',d['Employee Name'])+sig('Manager / Sr.Manager','')+
+    '</div>'+
+    '<div class="sign-row" style="margin-top:36px">'+sig('IT Support',d['Created By'])+'<div></div></div></div>'
+    :
+    '<div class="policy"><h4>Part I : Borrowing IT asset/equipment is temporary</h4>'+
+    '<p>The borrower is responsible in cases of equipment damage or loss.<br>ผู้ยืมต้องรับผิดชอบในกรณีที่อุปกรณ์เกิดความเสียหายหรือสูญหาย</p>'+
+    '<div class="sign-row" style="margin-top:20px">'+
+      sig('Employee Name Borrow',d['Employee Name'])+sig('Employee Name Return',d['Employee Name Return']||'')+
+    '</div></div>'
+  )+
   '</div>';
 }
 function renderReceiptPrint(eid){
@@ -795,17 +858,92 @@ function renderReceiptPrint(eid){
   '<div class="sign-row" style="margin-top:36px"><div class="sign"><div class="line"></div><p>แผนก HR</p></div><div class="sign"><div class="line"></div><p>แผนก IT</p></div></div>'+
   '</div>';
 }
+function cell3(label,val){return '<div class="cell3"><b>'+label+'</b>'+esc(val||'')+'</div>';}
+function specRow(item,val,sn){return '<tr><td style="font-weight:500">'+esc(item)+'</td><td>'+esc(val||'')+'</td><td></td><td class="mono" style="font-size:11.5px">'+esc(sn||'')+'</td><td></td></tr>';}
+
 function renderSpecPrint(eid){
   const e=DB.Employees.find(x=>x['Employee ID']===eid);if(!e)return;
   const asset=DB.AssetRegister.find(a=>a['Employee ID']===eid);
   const model=asset?DB.DeviceModels.find(m=>m['Model Name']===asset.Model):null;
-  const specRows=model?[['Product Name',model['Product Name']],['OS',model.OS],['Processor',model.Processor],['LCD',model.LCD],['Graphics',model.Graphics],['Memory',model.Memory],['Storage',model.Storage],['Cost / Set',money(model['Standard Cost'])+' Baht'],['Warranty',model['Warranty Years']+' ปี']]:[];
+  if(!model){
+    document.getElementById('printArea').innerHTML='<div class="doc-wrap"><p style="color:#b3261e">พนักงานนี้ยังไม่มีเครื่องที่ผูกรุ่นใน Device Models — เลือกเครื่องที่รุ่นถูกลงทะเบียนไว้ก่อน</p></div>';
+    return;
+  }
   document.getElementById('printArea').innerHTML=
-  '<div class="doc-wrap"><div class="doc-title"><h2>Details of Component Equipment</h2><p>Acknowledge and Receive · Handover Spec Sheet</p></div>'+
-  '<div class="doc-meta">'+row('Employee ID',e['Employee ID'])+row('Name',e.Name)+row('Position',e.Position)+row('Site',e.Site)+row('Finance Tag',asset?asset['Finance Tag']:'—')+row('Serial Number',asset?asset['S/N']:'—')+'</div>'+
-  (model?'<table class="doc-tbl"><tbody>'+specRows.map(r=>'<tr><td style="width:180px;background:#f7f8fb;font-weight:500">'+esc(r[0])+'</td><td>'+esc(r[1])+'</td></tr>').join('')+'</tbody></table>':'<p style="color:#b3261e">พนักงานนี้ยังไม่มีเครื่องที่ผูกรุ่นใน Device Models — เลือกเครื่องที่รุ่นถูกลงทะเบียนไว้</p>')+
-  '<p style="font-size:11.5px;color:var(--text-2);margin-top:8px">User &amp; Password สำหรับ First Time Login: เว้นว่างให้ IT กรอกด้วยมือตอนพิมพ์ (ไม่เก็บในระบบ)</p>'+
-  '<div class="sign-row"><div class="sign"><div class="line"></div><p>Employee Acknowledge &amp; Receive</p></div><div class="sign"><div class="line"></div><p>Sender by (IT)</p></div></div>'+
+  '<div class="doc-wrap">'+
+  '<div class="doc-title" style="margin-bottom:14px"><h2>Details of all component Equipment when you receive.</h2><p>Acknowledge and Receive</p></div>'+
+  '<div class="official-box g3" style="margin-bottom:16px">'+
+    cell3('Employee ID',e['Employee ID']+'  <<')+cell3('Start Date',fmtDate(asset['Transfer Date']))+cell3('Expiration Date',fmtDate(asset['Service/Expiration Date']))+
+    cell3('Name',e.Name)+cell3('Position',e.Position)+'<div class="cell3"></div>'+
+    cell3('Division',e.Department)+cell3('Site',e.Site)+'<div class="cell3"></div>'+
+  '</div>'+
+  '<table class="doc-tbl"><thead><tr><th>Computer Name</th><th>Item</th><th>Value</th><th>Barcode</th><th>Serial Number</th><th>Location</th></tr></thead><tbody>'+
+  '<tr><td rowspan="12" style="font-weight:700;vertical-align:top;background:#f7f8fb">'+esc(asset['Finance Tag'])+'</td>'+
+    '<td>Product Name</td><td>'+esc(model['Product Name'])+'</td><td></td><td class="mono" style="font-size:11.5px">'+esc(asset['S/N'])+'</td><td></td></tr>'+
+  '<tr><td>OS</td><td>'+esc(model.OS)+'</td><td></td><td></td><td></td></tr>'+
+  '<tr><td>Processor</td><td>'+esc(model.Processor)+'</td><td></td><td></td><td></td></tr>'+
+  '<tr><td>LCD</td><td>'+esc(model.LCD)+'</td><td></td><td></td><td></td></tr>'+
+  '<tr><td>Graphics</td><td>'+esc(model.Graphics)+'</td><td></td><td></td><td></td></tr>'+
+  '<tr><td>Memory</td><td>'+esc(model.Memory)+'</td><td></td><td></td><td></td></tr>'+
+  '<tr><td>Storage</td><td>'+esc(model.Storage)+'</td><td></td><td></td><td></td></tr>'+
+  '<tr><td>Cost / Set</td><td>'+money(model['Standard Cost'])+' Baht (In.Vat) Warranty '+esc(model['Warranty Years'])+' y</td><td></td><td></td><td></td></tr>'+
+  '<tr><td>Mouse</td><td>'+esc(model.Brand)+' USB Mouse</td><td></td><td class="mono" style="font-size:11.5px">'+esc(asset['Mouse S/N'])+'</td><td></td></tr>'+
+  '<tr><td>Adaptor</td><td>'+esc(model.Brand)+' Adaptor</td><td></td><td class="mono" style="font-size:11.5px">'+esc(asset['Adaptor S/N'])+'</td><td></td></tr>'+
+  '<tr><td>Bag</td><td>'+esc(model.Brand)+' Bag</td><td></td><td class="mono" style="font-size:11.5px">'+esc(asset['Bag S/N'])+'</td><td></td></tr>'+
+  '<tr><td>Peripherals</td><td>'+esc(asset['Peripherals Remark']||'-')+'</td><td></td><td></td><td></td></tr>'+
+  '</tbody></table>'+
+  '<div style="margin-top:26px;max-width:360px">'+
+    '<div class="line"></div><p style="font-size:12px">Acknowledge By ______________ Date ____________</p>'+
+    '<p style="font-size:12.5px;font-weight:600;margin-top:6px">'+esc(e.Name)+'</p>'+
+    '<p style="font-size:12px;color:var(--text-2)">Position: '+esc(e.Position)+'</p>'+
+    '<p style="font-size:12px;color:var(--text-2)">Sender by: '+esc(asset['IT Received']||'')+'</p>'+
+  '</div>'+
+  '<div class="policy">'+
+    '<h4>ส่วนที่ 1: ข้อตกลงเกี่ยวกับอุปกรณ์ IT</h4>'+
+    '<p>1. พนักงานจะได้รับเอกสารทั้งในรูปแบบ Hard Copy และ Soft Copy พร้อมลายเซ็นรับทราบทางอีเมล</p>'+
+    '<p>2. หากเกิดกรณีอุปกรณ์ IT มีปัญหาขัดข้อง เช่น Notebook เสีย น้ำหก หรือปัญหาไฟฟ้า กรุณาแจ้งและติดตามทันที</p>'+
+    '<p>&nbsp;&nbsp;2.1 ห้ามพนักงานซ่อมอุปกรณ์ด้วยตนเอง และต้องแจ้งแผนก IT ทันที</p>'+
+    '<p>3. ห้ามเพิ่ม เปลี่ยน หรือถอดอุปกรณ์ภายใน เช่น Hard Disk, RAM, CPU หรือชิ้นส่วนใดๆ</p>'+
+    '<p>4. ห้ามติดตั้งโปรแกรมที่ไม่ได้มาตรฐานขององค์กรบน Notebook หรือ Desktop</p>'+
+    '<p>5. พนักงานต้องรับทราบเงื่อนไขการรับประกันตามเอกสารนี้</p>'+
+    '<h4>ส่วนที่ 2: ค่าใช้จ่ายจาก IT และกรณีสิ้นสุดการรับประกัน</h4>'+
+    '<p><b>เงื่อนไขและข้อกำหนด</b></p>'+
+    '<p>1. แผนก IT จะไม่รับผิดชอบความเสียหายที่เกิดจากการใช้งานผิดประเภทของ Hardware และจะไม่ครอบคลุมการรับประกันจาก Vendor</p>'+
+    '<p>2. หากอุปกรณ์สูญหาย ผู้ใช้จะต้องรับผิดชอบค่าใช้จ่ายในการเปลี่ยนอุปกรณ์ใหม่ ตามรายละเอียดด้านล่าง</p>'+
+    '<table class="doc-tbl" style="max-width:340px;margin:8px 0 12px"><thead><tr><th>อุปกรณ์</th><th>ราคา</th></tr></thead><tbody>'+
+      '<tr><td>Adaptor</td><td class="mono">'+money(model['Standard Adaptor Price'])+' Baht</td></tr>'+
+      '<tr><td>Mouse</td><td class="mono">'+money(model['Standard Mouse Price'])+' Baht</td></tr>'+
+    '</tbody></table>'+
+    '<p>3. หากพนักงานลาออกก่อนกำหนดหรือทำให้ทรัพย์สินของบริษัทฯ เสียหาย บริษัทฯ สงวนสิทธิ์ในการเรียกเก็บค่าเสียหายภายใน 1 ปี</p>'+
+    '<p>4. การรับประกันไม่ครอบคลุมความเสียหายจากอุบัติเหตุหรือการทำร้ายทางกายภาพ</p>'+
+    '<p>5. การรับประกันไม่ครอบคลุมการใช้งานที่ผิดวิธี เกินขอบเขต หรือไม่ปฏิบัติตามคู่มือ</p>'+
+    '<p><b>ข้อกำหนดในการรับประกัน Notebook</b></p>'+
+    '<p>1. หลักเกณฑ์ความรับผิดชอบ — ผู้ใช้งานต้องรับผิดชอบต่อความเสียหายที่เกิดจากการใช้งานอันเกี่ยวข้องกับตนเองเป็นสำคัญ</p>'+
+    '<p>2. หลักเกณฑ์การดูแลรักษา — Notebook เป็นอุปกรณ์อิเล็กทรอนิกส์ที่ต้องอยู่ในความดูแลอย่างดีเสมอ หากพบความเสียหายจากการใช้งานผิดวิธี ให้แจ้งกลับมาที่แผนก IT ทันทีเพื่อดำเนินการตรวจสอบหรือเปลี่ยนใหม่</p>'+
+    '<p>3. การดูแลรักษาหน้าจอ LCD — ห้ามวางสิ่งของหรือวัตถุมีคมบนหน้าจอ Notebook และห้ามเช็ดหน้าจอด้วยกระดาษทิชชู่ ผ้าหยาบ หรือผ้าเปียกน้ำ</p>'+
+    '<p>4. สำรองข้อมูลเป็นประจำ — ข้อมูลสำคัญควรสำรอง (Backup) อย่างสม่ำเสมอ หาก Hard Disk มีปัญหาไม่ว่ากรณีใด บริษัทฯ ไม่มีส่วนรับผิดชอบในการกู้ข้อมูล</p>'+
+    '<p>5. หลักเกณฑ์การเบิกจ่าย — ผู้เบิกอุปกรณ์ต้องตรวจสอบความถูกต้องครบถ้วนตั้งแต่วันที่รับมอบ และแจ้งแผนก IT ก่อนดำเนินการใดๆ ที่เกี่ยวกับอุปกรณ์ทุกครั้ง บริษัทฯ ขอสงวนสิทธิ์ในการเข้าถึงอุปกรณ์และซอฟต์แวร์เมื่อพนักงานลาออก</p>'+
+    '<p>6. ค่าใช้จ่ายกรณีสูญหาย — หาก Notebook ชำรุดเสียหายจากความประมาทเลินเล่อของผู้ใช้งาน ผู้ใช้จะต้องรับผิดชอบค่าเสียหายเต็มจำนวนตามราคาประเมิน</p>'+
+    '<p>7. ห้ามกระทำผิดกฎหมาย — ห้ามนำเครื่องคอมพิวเตอร์ไปใช้กระทำผิดกฎหมายไม่ว่ากรณีใด ถือเป็นความรับผิดชอบส่วนบุคคลของผู้ใช้งานโดยตรง</p>'+
+    '<p>8. ห้ามปรับแต่งเครื่อง — ห้ามปรับแต่งโปรแกรมหรือค่าเครื่องคอมพิวเตอร์ หากพบว่ามีการกระทำดังกล่าวจนเกิดความเสียหาย ผู้ใช้งานต้องรับผิดชอบค่าเสียหายที่เกิดขึ้นทั้งหมด</p>'+
+    '<h4>ส่วนที่ 3: การคืนอุปกรณ์ IT</h4>'+
+    '<p>3.1 พนักงานต้องคืนอุปกรณ์ทันทีเมื่อสิ้นสุดสถานะการเป็นพนักงาน</p>'+
+    '<p>3.2 พนักงานต้องส่งมอบอุปกรณ์ IT ที่หมดความจำเป็นในการใช้งานคืนให้แผนก IT เมื่อสิ้นสุดการจ้างงาน</p>'+
+  '</div>'+
+  '<div class="official-box" style="margin-top:18px"><div class="sec-h" style="border:none">Company Assets (IT Equipment)</div>'+
+    offRow('Employee name',e.Name)+offRow('E-mail',e.Email)+offRow('Position',e.Position)+offRow('Division',e.Department)+
+  '</div>'+
+  '<div class="cred-box"><b style="display:block;margin-bottom:6px;font-size:12px">User &amp; Password for First Time Login on Laptop</b>'+
+    '<div class="r"><b>User / CJ ID</b><span>'+esc(e['CJ World ID']||'')+'</span></div>'+
+    '<div class="r"><b>Password</b><span class="mono">'+esc(e['CJ World Password']||'')+'</span></div>'+
+    '<div class="r"><b>Email</b><span>'+esc(e.Email||'')+'</span></div>'+
+    '<div class="r"><b>Email Password</b><span class="mono">'+esc(e['Email Password']||'')+'</span></div>'+
+  '</div>'+
+  '<div class="sign-row" style="margin-top:30px">'+
+    '<div class="sign" style="text-align:left"><div class="line" style="max-width:280px"></div><p>Employee Acknowledge &amp; Receive: ____________  Date: ____________</p></div>'+
+    '<div class="sign" style="text-align:left"><div class="line" style="max-width:280px"></div><p>Employee return: ____________  Date: ____________</p></div>'+
+  '</div>'+
+  '<p style="font-size:11.5px;color:var(--text-2);margin-top:14px">NOTED: ______________________________________________________________</p>'+
   '</div>';
 }
 function row(k,v){return '<div class="row"><b>'+k+':</b><span>'+esc(v||'—')+'</span></div>';}
