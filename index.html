@@ -942,7 +942,12 @@ async function saveTransfer(){
   const e=DB.Employees.find(x=>x['Employee ID']===eid);
   const type=val('tr_type');
   const header={'Employee ID':eid,'Employee Name':e.Name,'Position':e.Position,'Department':e.Department,'Site':e.Site,'Type':type,'Created By':val('tr_by'),'Supervisor Name':val('tr_sup'),'Description':val('tr_desc'),'Transfer Date':td(),'Due Date':type==='Borrow'?(val('tr_due')||''):''};
-  const items=TR_ITEMS.map((it,i)=>{const a=DB.AssetRegister.find(x=>x['Finance Tag']===it.tag);return {'Finance Tag':it.tag,'Device':a['Asset Type'],'Brand':a.Brand,'Model':a.Model,'Serial Number':a['S/N']};});
+  const items=[];
+  for(const it of TR_ITEMS){
+    const a=DB.AssetRegister.find(x=>x['Finance Tag']===it.tag);
+    if(!a){toast('ไม่พบ Finance Tag "'+it.tag+'" ในระบบ — ลบรายการนี้ออกแล้วเลือกเครื่องใหม่จาก "เลือกเครื่อง"',1);return;}
+    items.push({'Finance Tag':it.tag,'Device':a['Asset Type'],'Brand':a.Brand,'Model':a.Model,'Serial Number':a['S/N']});
+  }
   const r=await apiPost('createTransfer',{header,items});
   if(DEMO){
     const yr=new Date().getFullYear();
