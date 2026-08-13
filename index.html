@@ -398,7 +398,7 @@ function seedDemo(){
     {'Model Name':'Dell Pro 15 Essential PV15250','Device Type':'NB','Brand':'Dell','Product Name':'Dell Pro 15 Essential PV15250','OS':'Win11Pro 24H2','Processor':'13th Gen Intel® Core(TM) i7-1355U 1.70 GHZ','LCD':'14" diagonal, FHD (1920 x 1080),IPS, 250 nits','Graphics':'Intel(R) Iris® Xe Graphics 1920 x 1080','Memory':'16 GB','Storage':'512 GB','Standard Cost':'30500','Standard Adaptor Price':'1500','Standard Mouse Price':'200','Standard Bag Price':'990','Warranty Years':'3'}
   ];
   DB.AssetRegister=[
-    mkAsset(1,'WFDC','NB Laptop','HP','HP ProBook 440 G10','G185GC4','CJLWFDCNB013','In Stock','','','',''),
+    mkAsset(1,'WFDC','NB Laptop','HP','Probook','G185GC4','CJLWFDCNB013','In Stock','','','',''),
     mkAsset(2,'WFDC','NB Laptop','HP','HP ProBook 440 G10','G186XX2','CJLWFDCNB014','Assigned','TH061693','Mr. Noppdon Chuaikhit','WFDC Operations','WFDC03-2026'),
     mkAsset(3,'CDC','PC Desktop','Dell','Dell OptiPlex 7010','DL77120','CJLCDCPC0031','Borrowed','CD004512','Ms. Suda Wongsai','CDC IT','CDC01-2026'),
     Object.assign(mkAsset(4,'HDC','Monitor','Dell','Dell P2422H','MN55210','CJLHDCMN0087','In Stock','','','',''),{'Service/Expiration Date':'2026-09-20'}),
@@ -464,7 +464,7 @@ const PAGE_META={
 };
 const PAGE_ACTIONS={
   po:'<button class="btn pri" onclick="modalPO()">'+ic('plus')+'สร้าง PO</button>',
-  receiving:'<button class="btn pri" onclick="modalReceiving()">'+ic('plus')+'รับของเข้า</button>',
+  receiving:'<button class="btn pri" onclick="RCV_ITEMS=[];RCV_FORM={};modalReceiving()">'+ic('plus')+'รับของเข้า</button>',
   transfer:'<button class="btn pri" onclick="TR_ITEMS=[];TR_FORM={};modalTransfer()">'+ic('plus')+'สร้างเอกสาร</button>',
   employees:'<button class="btn pri" onclick="modalEmployee()">'+ic('plus')+'เพิ่มพนักงาน</button>',
   models:'<button class="btn pri" onclick="modalModel()">'+ic('plus')+'เพิ่มรุ่น</button>'
@@ -502,6 +502,11 @@ function fillSelect(id,arr,ph){
 }
 
 function isOverdue(d){return d.Type==='Borrow'&&d['Doc Status']!=='Returned'&&d['Due Date']&&d['Due Date']<td();}
+function modelMismatch(a){
+  const isComputer=/NB|Laptop|PC|Desktop/i.test(a['Asset Type']||a['IT Asset Type']||'');
+  if(!isComputer||!a.Model)return false;
+  return !DB.DeviceModels.some(m=>m['Model Name']===a.Model);
+}
 function daysUntil(dateStr){if(!dateStr)return null;const diff=(new Date(dateStr)-new Date(td()))/86400000;return Math.round(diff);}
 
 function renderDashboard(){
@@ -510,7 +515,8 @@ function renderDashboard(){
   STAT_LIST.forEach(s=>counts[s]=A.filter(a=>a.Status===s).length);
   const overdueCount=DB.TransferDocument.filter(isOverdue).length;
   const expiringSoon=A.filter(a=>{const d=daysUntil(a['Service/Expiration Date']);return d!==null&&d>=0&&d<=60;}).length;
-  const cards=[['Total assets',counts.Total,'#1f6feb'],['In stock',counts['In Stock'],STAT_BAR['In Stock']],['Assigned',counts.Assigned,STAT_BAR.Assigned],['Borrowed',counts.Borrowed,STAT_BAR.Borrowed],['Repair',counts.Repair,STAT_BAR.Repair],['Disposed',counts.Disposed,STAT_BAR.Disposed],['ยืมเกินกำหนด',overdueCount,'#b3261e'],['Warranty ใกล้หมด (60วัน)',expiringSoon,'#a15c00']];
+  const mismatchCount=A.filter(modelMismatch).length;
+  const cards=[['Total assets',counts.Total,'#1f6feb'],['In stock',counts['In Stock'],STAT_BAR['In Stock']],['Assigned',counts.Assigned,STAT_BAR.Assigned],['Borrowed',counts.Borrowed,STAT_BAR.Borrowed],['Repair',counts.Repair,STAT_BAR.Repair],['Disposed',counts.Disposed,STAT_BAR.Disposed],['ยืมเกินกำหนด',overdueCount,'#b3261e'],['Warranty ใกล้หมด (60วัน)',expiringSoon,'#a15c00'],['Model ไม่ตรง Device Models',mismatchCount,'#b3261e']];
   document.getElementById('statCards').innerHTML=cards.map(c=>
     '<div class="stat" style="--bar:'+c[2]+'"><div class="lab">'+c[0]+'</div><div class="val">'+c[1]+'</div></div>').join('');
   // by category
@@ -532,7 +538,7 @@ function renderRegister(){
     (!site||a.Site===site)&&(!st||a.Status===st)&&
     (!q||[a['Finance Tag'],a['S/N'],a['Owner Name']].some(x=>String(x||'').toLowerCase().includes(q))));
   document.getElementById('tblRegister').innerHTML=rows.length?rows.map(a=>
-    '<tr><td><span class="tag">'+esc(a['Finance Tag'])+'</span></td><td>'+esc(a.Brand)+' '+esc(a.Model)+'</td><td class="mono" style="font-size:12px">'+esc(a['S/N'])+'</td><td>'+(a['Owner Name']?esc(a['Owner Name']):'<span style="color:var(--text-3)">—</span>')+'</td><td>'+esc(a['Work Location']||'—')+'</td><td>'+esc(a.Site)+'</td><td>'+pill(a.Status)+'</td><td><button class="btn ghost" style="padding:4px 8px" onclick="modalEditAsset(\''+esc(a['Finance Tag'])+'\')">'+ic('edit')+'</button></td></tr>').join(''):emptyRow(8);
+    '<tr><td><span class="tag">'+esc(a['Finance Tag'])+'</span></td><td>'+esc(a.Brand)+' '+esc(a.Model)+(modelMismatch(a)?' <span title="Model นี้ไม่ตรงกับที่ลงทะเบียนไว้ใน Device Models — พิมพ์แก้ Spec Handover ไม่ได้จนกว่าจะแก้ไข" style="color:var(--danger);cursor:help;font-weight:700">⚠</span>':'')+'</td><td class="mono" style="font-size:12px">'+esc(a['S/N'])+'</td><td>'+(a['Owner Name']?esc(a['Owner Name']):'<span style="color:var(--text-3)">—</span>')+'</td><td>'+esc(a['Work Location']||'—')+'</td><td>'+esc(a.Site)+'</td><td>'+pill(a.Status)+'</td><td><button class="btn ghost" style="padding:4px 8px" onclick="modalEditAsset(\''+esc(a['Finance Tag'])+'\')">'+ic('edit')+'</button></td></tr>').join(''):emptyRow(8);
 }
 function renderPO(){
   const q=val('poSearch').toLowerCase();
@@ -687,33 +693,45 @@ async function savePO(){
 }
 
 let RCV_ITEMS=[];
+let RCV_FORM={};
 function modalReceiving(){
-  RCV_ITEMS=[{tag:'',sn:''}];
   const pos=DB.PurchaseOrder.filter(p=>p.Status!=='Closed');
+  const f0=RCV_FORM;
+  const modelNames=[...new Set(DB.DeviceModels.map(m=>m['Model Name']))];
+  if(!RCV_ITEMS.length)RCV_ITEMS=[{tag:'',sn:''}];
   showModal(mHead('รับของเข้าคลัง')+
     '<div class="modal-b">'+
     '<div class="grid3">'+
-    '<div class="field"><label>PO No.</label><select class="inp" id="gr_po" onchange="rcvOnPOChange()"><option value="">— ไม่อ้างอิง PO —</option>'+pos.map(p=>'<option>'+p['PO No.']+'</option>').join('')+'</select></div>'+
-    sel('Site','gr_site',SITES)+
-    '<div class="field"><label>จำนวนที่จะรับรอบนี้</label><input class="inp" id="gr_count" type="number" min="1" value="1" onchange="resizeRcvItems(parseInt(this.value)||1)"></div>'+
+    '<div class="field"><label>PO No.</label><select class="inp" id="gr_po" onchange="rcvOnPOChange()"><option value="">— ไม่อ้างอิง PO —</option>'+pos.map(p=>'<option'+(f0.po===p['PO No.']?' selected':'')+'>'+p['PO No.']+'</option>').join('')+'</select></div>'+
+    sel('Site','gr_site',SITES,f0.site)+
+    '<div class="field"><label>จำนวนที่จะรับรอบนี้</label><input class="inp" id="gr_count" type="number" min="1" value="'+RCV_ITEMS.length+'" onchange="resizeRcvItems(parseInt(this.value)||1)"></div>'+
     '</div>'+
     '<div class="grid3" style="margin-top:12px">'+
-    f('Brand','gr_brand','')+f('Model','gr_model','')+sel('IT Asset Type','gr_type',ASSET_TYPES)+
+    '<div class="field"><label>Model</label><select class="inp" id="gr_model" onchange="fillModelBrand()"><option value="">— เลือกรุ่น (จาก Device Models) —</option>'+modelNames.map(mn=>'<option'+(f0.model===mn?' selected':'')+'>'+esc(mn)+'</option>').join('')+'</select></div>'+
+    f('Brand (auto)','gr_brand','disabled value="'+esc(f0.brand||'')+'"')+
+    sel('IT Asset Type','gr_type',ASSET_TYPES,f0.type)+
     '</div>'+
     '<div class="grid3" style="margin-top:12px">'+
-    f('Invoice No.','gr_inv','')+
-    f('Service/Exp Date','gr_exp','type="date"')+
-    sel('Condition','gr_cond',['New','Good','Fair'])+
+    f('Invoice No.','gr_inv','value="'+esc(f0.inv||'')+'"')+
+    f('Service/Exp Date','gr_exp','type="date" value="'+esc(f0.exp||'')+'"')+
+    sel('Condition','gr_cond',['New','Good','Fair'],f0.cond)+
     '</div>'+
-    '<div class="grid2" style="margin-top:12px">'+f('IT Received','gr_by','')+'</div>'+
+    '<div class="grid2" style="margin-top:12px">'+f('IT Received','gr_by','value="'+esc(f0.by||'')+'"')+'</div>'+
     '<div style="margin:18px 0 8px;display:flex;justify-content:space-between;align-items:center">'+
-      '<label style="font-size:12px;font-weight:600;color:var(--text-2)">รายการ Finance Tag / S/N</label>'+
-      '<button class="btn" style="padding:5px 11px" onclick="modalPasteExcel()">'+ic('plus')+'วางจาก Excel</button>'+
+      '<label style="font-size:12px;font-weight:600;color:var(--text-2)">รายการ Finance Tag / S/N ('+RCV_ITEMS.length+' เครื่อง)</label>'+
+      '<button class="btn" style="padding:5px 11px" onclick="saveRcvFormState();modalPasteExcel()">'+ic('plus')+'วางจาก Excel</button>'+
     '</div>'+
     '<div class="tbl-wrap" style="box-shadow:none;max-height:320px;overflow-y:auto"><table><thead><tr><th style="width:40px">#</th><th>Finance Tag</th><th>S/N</th><th style="width:36px"></th></tr></thead><tbody id="rcvItems"></tbody></table></div>'+
     '</div>'+
-    '<div class="modal-f"><button class="btn ghost" onclick="closeModal()">ยกเลิก</button><button class="btn pri" onclick="saveReceivingBatch()">รับเข้าทั้งหมด</button></div>',true);
+    '<div class="modal-f"><button class="btn ghost" onclick="RCV_ITEMS=[];RCV_FORM={};closeModal()">ยกเลิก</button><button class="btn pri" onclick="saveReceivingBatch()">รับเข้าทั้งหมด</button></div>',true);
   renderRcvItems();
+}
+function saveRcvFormState(){
+  RCV_FORM={po:val('gr_po'),site:val('gr_site'),model:val('gr_model'),brand:val('gr_brand'),type:val('gr_type'),inv:val('gr_inv'),exp:val('gr_exp'),cond:val('gr_cond'),by:val('gr_by')};
+}
+function fillModelBrand(){
+  const m=DB.DeviceModels.find(x=>x['Model Name']===val('gr_model'));
+  document.getElementById('gr_brand').value=m?m.Brand:'';
 }
 function rcvOnPOChange(){
   const poNo=val('gr_po');
@@ -721,7 +739,6 @@ function rcvOnPOChange(){
   const remain=po?Math.max(1,num(po.Qty)-num(po['Received Qty'])):1;
   document.getElementById('gr_count').value=remain;
   resizeRcvItems(remain);
-  if(po){document.getElementById('gr_brand').value=document.getElementById('gr_brand').value||'';}
 }
 function resizeRcvItems(n){
   n=Math.max(1,n||1);
@@ -772,7 +789,7 @@ function modalPasteExcel(){
     '<p style="font-size:12.5px;color:var(--text-2);margin:0 0 10px">Copy 2 คอลัมน์จาก Excel (Finance Tag แล้ว Tab แล้ว S/N) แล้ววางในช่องนี้ หนึ่งบรรทัดต่อหนึ่งเครื่อง</p>'+
     '<textarea class="inp" id="paste_area" rows="10" style="font-family:\'IBM Plex Mono\',monospace;font-size:12.5px" placeholder="CJLWFDCNB013	G185GC4&#10;CJLWFDCNB014	G186XX2"></textarea>'+
     '</div>'+
-    '<div class="modal-f"><button class="btn ghost" onclick="closeModal();modalReceivingReopen()">ยกเลิก</button><button class="btn pri" onclick="applyPasteExcel()">นำเข้า</button></div>',true);
+    '<div class="modal-f"><button class="btn ghost" onclick="closeModal();modalReceiving()">ยกเลิก</button><button class="btn pri" onclick="applyPasteExcel()">นำเข้า</button></div>',true);
 }
 function applyPasteExcel(){
   const raw=val('paste_area');
@@ -783,18 +800,7 @@ function applyPasteExcel(){
     return {tag:parts[0]||'',sn:parts[1]||''};
   });
   toast('นำเข้า '+RCV_ITEMS.length+' รายการแล้ว');
-  modalReceivingReopen();
-}
-function modalReceivingReopen(){
-  // เก็บ state RCV_ITEMS ไว้ กลับไปหน้ารับของเดิมโดยไม่รีเซ็ตฟอร์มบน (จำลองการปิด modal ย่อยกลับ)
-  document.getElementById('modal').className='modal wide';
-  document.getElementById('overlay').classList.add('open');
-  // rebuild receiving modal shell with current RCV_ITEMS
-  const poVal=document.getElementById('gr_po')?document.getElementById('gr_po').value:'';
   modalReceiving();
-  if(poVal)document.getElementById('gr_po').value=poVal;
-  document.getElementById('gr_count').value=RCV_ITEMS.length;
-  renderRcvItems();
 }
 async function saveReceivingBatch(){
   const items=RCV_ITEMS.filter(it=>it.tag.trim());
@@ -827,12 +833,19 @@ async function saveReceivingBatch(){
     }
   }
   finishSave(r,'รับของเข้าคลังแล้ว '+payloadItems.length+' เครื่อง');
+  RCV_ITEMS=[];RCV_FORM={};
 }
 
 function modalEditAsset(tag){
   const a=DB.AssetRegister.find(x=>x['Finance Tag']===tag);if(!a)return;
+  const modelNames=[...new Set(DB.DeviceModels.map(m=>m['Model Name']))];
+  const mismatch=modelMismatch(a);
   showModal(mHead('แก้ไขทรัพย์สิน · '+tag)+
-    '<div class="modal-b"><div class="grid2">'+
+    '<div class="modal-b">'+
+    (mismatch?'<p style="font-size:12px;color:var(--danger);background:var(--danger-bg);padding:8px 10px;border-radius:6px;margin:0 0 12px">⚠ Model ปัจจุบัน "'+esc(a.Model)+'" ไม่ตรงกับที่ลงทะเบียนไว้ใน Device Models — เลือกรุ่นที่ถูกต้องด้านล่าง</p>':'')+
+    '<div class="grid2">'+
+    '<div class="field"><label>Model</label><select class="inp" id="ea_model" onchange="fillEaModelBrand()"><option value="'+esc(a.Model||'')+'">'+esc(a.Model||'— ไม่ระบุ —')+(mismatch?' (ไม่ตรง Device Models)':'')+'</option>'+modelNames.filter(mn=>mn!==a.Model).map(mn=>'<option>'+esc(mn)+'</option>').join('')+'</select></div>'+
+    f('Brand','ea_brand','value="'+esc(a.Brand||'')+'"')+
     f('Work Location','ea_loc','value="'+esc(a['Work Location']||'')+'"')+
     sel('Status','ea_status',STAT_LIST,a.Status)+
     f('Service/Exp Date','ea_exp','type="date" value="'+esc(a['Service/Expiration Date']||'')+'"')+
@@ -840,10 +853,14 @@ function modalEditAsset(tag){
     '</div></div>'+
     '<div class="modal-f"><button class="btn ghost" onclick="closeModal()">ยกเลิก</button><button class="btn pri" onclick="saveEditAsset(\''+esc(tag)+'\')">บันทึก</button></div>');
 }
+function fillEaModelBrand(){
+  const m=DB.DeviceModels.find(x=>x['Model Name']===val('ea_model'));
+  if(m)document.getElementById('ea_brand').value=m.Brand;
+}
 async function saveEditAsset(tag){
-  const p={'Finance Tag':tag,'Work Location':val('ea_loc'),'Status':val('ea_status'),'Service/Expiration Date':val('ea_exp'),'Remark':val('ea_remark')};
+  const p={'Finance Tag':tag,'Model':val('ea_model'),'Brand':val('ea_brand'),'Work Location':val('ea_loc'),'Status':val('ea_status'),'Service/Expiration Date':val('ea_exp'),'Remark':val('ea_remark')};
   const r=await apiPost('editAsset',p);
-  if(DEMO){Object.assign(DB.AssetRegister.find(x=>x['Finance Tag']===tag),{'Work Location':p['Work Location'],'Status':p.Status,'Service/Expiration Date':p['Service/Expiration Date'],'Remark':p.Remark});}
+  if(DEMO){Object.assign(DB.AssetRegister.find(x=>x['Finance Tag']===tag),{'Model':p.Model,'Brand':p.Brand,'Work Location':p['Work Location'],'Status':p.Status,'Service/Expiration Date':p['Service/Expiration Date'],'Remark':p.Remark});}
   finishSave(r,'แก้ไขแล้ว');
 }
 
