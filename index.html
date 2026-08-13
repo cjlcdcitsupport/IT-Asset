@@ -254,6 +254,7 @@
 
       <!-- Purchase Order -->
       <section class="page" id="page-po">
+        <div class="toolbar"><div class="search"><i data-ic="search"></i><input id="poSearch" placeholder="ค้นหา PO No. / Vendor / Description" oninput="renderPO()"></div></div>
         <div class="tbl-wrap"><table>
           <thead><tr><th>PO No.</th><th>Date</th><th>Vendor</th><th>Description</th><th>Type</th><th>Qty</th><th>Received</th><th>Total</th><th>Status</th></tr></thead>
           <tbody id="tblPO"></tbody>
@@ -262,6 +263,7 @@
 
       <!-- Receiving -->
       <section class="page" id="page-receiving">
+        <div class="toolbar"><div class="search"><i data-ic="search"></i><input id="rcSearch" placeholder="ค้นหา GR No. / Finance Tag / S/N" oninput="renderReceiving()"></div></div>
         <div class="tbl-wrap"><table>
           <thead><tr><th>GR No.</th><th>PO No.</th><th>Date</th><th>Finance Tag</th><th>S/N</th><th>Brand</th><th>Model</th><th>Cost</th><th>By</th></tr></thead>
           <tbody id="tblReceiving"></tbody>
@@ -270,8 +272,9 @@
 
       <!-- Transfer / Borrow -->
       <section class="page" id="page-transfer">
+        <div class="toolbar"><div class="search"><i data-ic="search"></i><input id="trSearch" placeholder="ค้นหา Document No. / Employee / Department" oninput="renderTransfer()"></div></div>
         <div class="tbl-wrap"><table>
-          <thead><tr><th>Document No.</th><th>Date</th><th>Type</th><th>Employee</th><th>Department</th><th>Items</th><th>Status</th></tr></thead>
+          <thead><tr><th>Document No.</th><th>Date</th><th>Type</th><th>Employee</th><th>Department</th><th>Due Date</th><th>Items</th><th>Status</th></tr></thead>
           <tbody id="tblTransfer"></tbody>
         </table></div>
       </section>
@@ -280,7 +283,7 @@
       <section class="page" id="page-return">
         <p style="color:var(--text-2);margin:0 0 16px;font-size:13px">เอกสาร Borrow ที่ยังไม่คืน — กด "รับคืน" เพื่อคืนอุปกรณ์ทั้งหมดในเอกสารกลับสถานะ In Stock</p>
         <div class="tbl-wrap"><table>
-          <thead><tr><th>Document No.</th><th>Date</th><th>Employee</th><th>Items</th><th>Status</th><th></th></tr></thead>
+          <thead><tr><th>Document No.</th><th>Date</th><th>Employee</th><th>Due Date</th><th>Items</th><th>Status</th><th></th></tr></thead>
           <tbody id="tblReturn"></tbody>
         </table></div>
       </section>
@@ -364,6 +367,7 @@ function ic(n){
 
 // ================= STATE =================
 const SITES=['WFDC','CDC','HDC'];
+let ASSET_TYPES=['NB Laptop','PC Desktop','Monitor','Printer','Scanner','UPS','Network Equipment','Mobile Device','PDA/Handheld','Peripheral','Other'];
 const STAT_LIST=['In Stock','Borrowed','Assigned','Repair','Disposed','Lost'];
 const STAT_CLASS={'In Stock':'instock','Borrowed':'borrowed','Assigned':'assigned','Repair':'repair','Disposed':'disposed','Lost':'lost'};
 const STAT_BAR={'In Stock':'#1a7f52','Borrowed':'#a15c00','Assigned':'#1f4fa8','Repair':'#9a4a00','Disposed':'#b3261e','Lost':'#5b6780'};
@@ -386,7 +390,7 @@ function seedDemo(){
     mkAsset(1,'WFDC','NB Laptop','HP','HP ProBook 440 G10','G185GC4','CJLWFDCNB013','In Stock','','','',''),
     mkAsset(2,'WFDC','NB Laptop','HP','HP ProBook 440 G10','G186XX2','CJLWFDCNB014','Assigned','TH061693','Mr. Noppdon Chuaikhit','WFDC Operations','WFDC03-2026'),
     mkAsset(3,'CDC','PC Desktop','Dell','Dell OptiPlex 7010','DL77120','CJLCDCPC0031','Borrowed','CD004512','Ms. Suda Wongsai','CDC IT','CDC01-2026'),
-    mkAsset(4,'HDC','Monitor','Dell','Dell P2422H','MN55210','CJLHDCMN0087','In Stock','','','',''),
+    Object.assign(mkAsset(4,'HDC','Monitor','Dell','Dell P2422H','MN55210','CJLHDCMN0087','In Stock','','','',''),{'Service/Expiration Date':'2026-09-20'}),
     mkAsset(5,'WFDC','Printer','Brother','Brother HL-L2375DW','PR90012','CJLWFDCPR0009','Repair','','','','')
   ];
   DB.PurchaseOrder=[
@@ -399,7 +403,7 @@ function seedDemo(){
   ];
   DB.TransferDocument=[
     {'Document No.':'WFDC03-2026','Document Date':'2026-08-11','Type':'Transfer','Employee ID':'TH061693','Employee Name':'Mr. Noppdon Chuaikhit','Position':'Supervisor - Reach Trucks Driver','Department':'WFDC Operations','Site':'WFDC','Created By':'Thanaphat Jangsawang','Supervisor Name':'Thipmani Chatrungrattana','Transfer Date':'2026-06-22','Description':'New hire equipment','Doc Status':'Open'},
-    {'Document No.':'CDC01-2026','Document Date':'2026-08-05','Type':'Borrow','Employee ID':'CD004512','Employee Name':'Ms. Suda Wongsai','Position':'IT Support','Department':'CDC IT','Site':'CDC','Created By':'Somchai T.','Transfer Date':'2026-08-05','Description':'Temporary loan for project','Doc Status':'Open'}
+    {'Document No.':'CDC01-2026','Document Date':'2026-08-05','Type':'Borrow','Employee ID':'CD004512','Employee Name':'Ms. Suda Wongsai','Position':'IT Support','Department':'CDC IT','Site':'CDC','Created By':'Somchai T.','Transfer Date':'2026-08-05','Due Date':'2026-08-10','Description':'Temporary loan for project','Doc Status':'Open'}
   ];
   DB.TransferItems=[
     {'Document No.':'WFDC03-2026','No.':1,'Finance Tag':'CJLWFDCNB014','Device':'Laptop','Brand':'HP','Model':'HP ProBook 440 G10','Serial Number':'G186XX2'},
@@ -424,7 +428,7 @@ async function apiGet(){
   if(DEMO){seedDemo();return;}
   const r=await fetch(BACKEND_URL);
   const j=await r.json();
-  if(j.success)DB=j.data;
+  if(j.success){DB=j.data;if(j.meta&&j.meta.assetTypes&&j.meta.assetTypes.length)ASSET_TYPES=j.meta.assetTypes;}
 }
 async function apiPost(action,payload){
   if(DEMO){return {success:true,code:'DEMO',params:{}};}
@@ -448,7 +452,7 @@ const PAGE_META={
 const PAGE_ACTIONS={
   po:'<button class="btn pri" onclick="modalPO()">'+ic('plus')+'สร้าง PO</button>',
   receiving:'<button class="btn pri" onclick="modalReceiving()">'+ic('plus')+'รับของเข้า</button>',
-  transfer:'<button class="btn pri" onclick="modalTransfer()">'+ic('plus')+'สร้างเอกสาร</button>',
+  transfer:'<button class="btn pri" onclick="TR_ITEMS=[];TR_FORM={};modalTransfer()">'+ic('plus')+'สร้างเอกสาร</button>',
   employees:'<button class="btn pri" onclick="modalEmployee()">'+ic('plus')+'เพิ่มพนักงาน</button>',
   models:'<button class="btn pri" onclick="modalModel()">'+ic('plus')+'เพิ่มรุ่น</button>'
 };
@@ -484,11 +488,16 @@ function fillSelect(id,arr,ph){
   s.value=cur;
 }
 
+function isOverdue(d){return d.Type==='Borrow'&&d['Doc Status']!=='Returned'&&d['Due Date']&&d['Due Date']<td();}
+function daysUntil(dateStr){if(!dateStr)return null;const diff=(new Date(dateStr)-new Date(td()))/86400000;return Math.round(diff);}
+
 function renderDashboard(){
   const A=DB.AssetRegister;
   const counts={Total:A.length};
   STAT_LIST.forEach(s=>counts[s]=A.filter(a=>a.Status===s).length);
-  const cards=[['Total assets',counts.Total,'#1f6feb'],['In stock',counts['In Stock'],STAT_BAR['In Stock']],['Assigned',counts.Assigned,STAT_BAR.Assigned],['Borrowed',counts.Borrowed,STAT_BAR.Borrowed],['Repair',counts.Repair,STAT_BAR.Repair],['Disposed',counts.Disposed,STAT_BAR.Disposed]];
+  const overdueCount=DB.TransferDocument.filter(isOverdue).length;
+  const expiringSoon=A.filter(a=>{const d=daysUntil(a['Service/Expiration Date']);return d!==null&&d>=0&&d<=60;}).length;
+  const cards=[['Total assets',counts.Total,'#1f6feb'],['In stock',counts['In Stock'],STAT_BAR['In Stock']],['Assigned',counts.Assigned,STAT_BAR.Assigned],['Borrowed',counts.Borrowed,STAT_BAR.Borrowed],['Repair',counts.Repair,STAT_BAR.Repair],['Disposed',counts.Disposed,STAT_BAR.Disposed],['ยืมเกินกำหนด',overdueCount,'#b3261e'],['Warranty ใกล้หมด (60วัน)',expiringSoon,'#a15c00']];
   document.getElementById('statCards').innerHTML=cards.map(c=>
     '<div class="stat" style="--bar:'+c[2]+'"><div class="lab">'+c[0]+'</div><div class="val">'+c[1]+'</div></div>').join('');
   // by category
@@ -513,29 +522,39 @@ function renderRegister(){
     '<tr><td><span class="tag">'+esc(a['Finance Tag'])+'</span></td><td>'+esc(a.Brand)+' '+esc(a.Model)+'</td><td class="mono" style="font-size:12px">'+esc(a['S/N'])+'</td><td>'+(a['Owner Name']?esc(a['Owner Name']):'<span style="color:var(--text-3)">—</span>')+'</td><td>'+esc(a['Work Location']||'—')+'</td><td>'+esc(a.Site)+'</td><td>'+pill(a.Status)+'</td><td><button class="btn ghost" style="padding:4px 8px" onclick="modalEditAsset(\''+esc(a['Finance Tag'])+'\')">'+ic('edit')+'</button></td></tr>').join(''):emptyRow(8);
 }
 function renderPO(){
-  document.getElementById('tblPO').innerHTML=DB.PurchaseOrder.length?DB.PurchaseOrder.map(p=>{
+  const q=val('poSearch').toLowerCase();
+  const rows=DB.PurchaseOrder.filter(p=>!q||[p['PO No.'],p.Vendor,p.Description].some(x=>String(x||'').toLowerCase().includes(q)));
+  document.getElementById('tblPO').innerHTML=rows.length?rows.map(p=>{
     const sc=p.Status==='Closed'?'instock':p.Status==='Partially Received'?'borrowed':'assigned';
     return '<tr><td class="mono">'+esc(p['PO No.'])+'</td><td>'+esc(p['PO Date'])+'</td><td>'+esc(p.Vendor)+'</td><td>'+esc(p.Description)+'</td><td>'+esc(p['IT Asset Type'])+'</td><td class="mono">'+num(p.Qty)+'</td><td class="mono">'+num(p['Received Qty'])+'</td><td class="mono">'+money(p.Total)+'</td><td><span class="pill '+sc+'">'+esc(p.Status)+'</span></td></tr>';
   }).join(''):emptyRow(9);
 }
 function renderReceiving(){
-  document.getElementById('tblReceiving').innerHTML=DB.Receiving.length?DB.Receiving.map(r=>
+  const q=val('rcSearch').toLowerCase();
+  const rows=DB.Receiving.filter(r=>!q||[r['GR No.'],r['Finance Tag'],r['S/N']].some(x=>String(x||'').toLowerCase().includes(q)));
+  document.getElementById('tblReceiving').innerHTML=rows.length?rows.map(r=>
     '<tr><td class="mono">'+esc(r['GR No.'])+'</td><td class="mono">'+esc(r['PO No.'])+'</td><td>'+esc(r['Receive Date'])+'</td><td><span class="tag">'+esc(r['Finance Tag'])+'</span></td><td class="mono" style="font-size:12px">'+esc(r['S/N'])+'</td><td>'+esc(r.Brand)+'</td><td>'+esc(r.Model)+'</td><td class="mono">'+money(r.Cost)+'</td><td>'+esc(r['IT Received'])+'</td></tr>').join(''):emptyRow(9);
 }
 function renderTransfer(){
-  document.getElementById('tblTransfer').innerHTML=DB.TransferDocument.length?DB.TransferDocument.map(d=>{
+  const q=val('trSearch').toLowerCase();
+  const rows=DB.TransferDocument.filter(d=>!q||[d['Document No.'],d['Employee Name'],d.Department].some(x=>String(x||'').toLowerCase().includes(q)));
+  document.getElementById('tblTransfer').innerHTML=rows.length?rows.map(d=>{
     const items=DB.TransferItems.filter(i=>i['Document No.']===d['Document No.']).length;
     const tc=d.Type==='Transfer'?'type-t':'type-b';
-    const sc=d['Doc Status']==='Returned'?'instock':'assigned';
-    return '<tr><td class="mono">'+esc(d['Document No.'])+'</td><td>'+esc(d['Document Date'])+'</td><td><span class="badge '+tc+'">'+esc(d.Type)+'</span></td><td>'+esc(d['Employee Name'])+'</td><td>'+esc(d.Department)+'</td><td class="mono">'+items+'</td><td><span class="pill '+sc+'">'+esc(d['Doc Status'])+'</span></td></tr>';
-  }).join(''):emptyRow(7);
+    const overdue=isOverdue(d);
+    const sc=d['Doc Status']==='Returned'?'instock':(overdue?'disposed':'assigned');
+    const dueTxt=d['Due Date']?esc(d['Due Date'])+(overdue?' <span style="color:var(--danger);font-weight:600">⚠</span>':''):'<span style="color:var(--text-3)">—</span>';
+    return '<tr><td class="mono">'+esc(d['Document No.'])+'</td><td>'+esc(d['Document Date'])+'</td><td><span class="badge '+tc+'">'+esc(d.Type)+'</span></td><td>'+esc(d['Employee Name'])+'</td><td>'+esc(d.Department)+'</td><td>'+dueTxt+'</td><td class="mono">'+items+'</td><td><span class="pill '+sc+'">'+(overdue?'เกินกำหนด':esc(d['Doc Status']))+'</span></td></tr>';
+  }).join(''):emptyRow(8);
 }
 function renderReturn(){
   const open=DB.TransferDocument.filter(d=>d.Type==='Borrow'&&d['Doc Status']!=='Returned');
   document.getElementById('tblReturn').innerHTML=open.length?open.map(d=>{
     const items=DB.TransferItems.filter(i=>i['Document No.']===d['Document No.']).length;
-    return '<tr><td class="mono">'+esc(d['Document No.'])+'</td><td>'+esc(d['Document Date'])+'</td><td>'+esc(d['Employee Name'])+'</td><td class="mono">'+items+'</td><td>'+pill('Borrowed')+'</td><td><button class="btn pri" style="padding:5px 12px" onclick="modalReturn(\''+esc(d['Document No.'])+'\')">'+ic('undo')+'รับคืน</button></td></tr>';
-  }).join(''):emptyRow(6,'ไม่มีเอกสารยืมที่ค้างคืน');
+    const overdue=isOverdue(d);
+    const dueTxt=d['Due Date']?esc(d['Due Date'])+(overdue?' <span style="color:var(--danger);font-weight:600">(เกินกำหนด)</span>':''):'<span style="color:var(--text-3)">—</span>';
+    return '<tr'+(overdue?' style="background:var(--danger-bg)"':'')+'><td class="mono">'+esc(d['Document No.'])+'</td><td>'+esc(d['Document Date'])+'</td><td>'+esc(d['Employee Name'])+'</td><td>'+dueTxt+'</td><td class="mono">'+items+'</td><td>'+pill('Borrowed')+'</td><td><button class="btn pri" style="padding:5px 12px" onclick="modalReturn(\''+esc(d['Document No.'])+'\')">'+ic('undo')+'รับคืน</button></td></tr>';
+  }).join(''):emptyRow(7,'ไม่มีเอกสารยืมที่ค้างคืน');
 }
 function renderHistory(){
   const q=val('hSearch').toLowerCase();
@@ -595,7 +614,12 @@ function modalEmployee(id){
 async function saveEmployee(id){
   const p={'Employee ID':id||val('e_id'),'Name':val('e_name'),'Position':val('e_pos'),'Department':val('e_dept'),'Site':val('e_site'),'Join Date':val('e_join'),'Mobile Phone No.':val('e_phone'),'Email':val('e_email'),'CJ World ID':val('e_cjid'),'CJ World Password':val('e_cjpw'),'Email Password':val('e_emailpw'),'Active':val('e_active')};
   if(!p['Employee ID']||!p.Name){toast('กรอก Employee ID และชื่อ',1);return;}
+  if(id&&p.Active==='No'){
+    const held=DB.AssetRegister.filter(a=>a['Employee ID']===id&&(a.Status==='Assigned'||a.Status==='Borrowed'));
+    if(held.length){toast('ปิดการใช้งานไม่ได้ — พนักงานยังถือครองอุปกรณ์ '+held.length+' เครื่อง ('+held.map(a=>a['Finance Tag']).join(', ')+') กรุณาคืน/โอนอุปกรณ์ก่อน',1);return;}
+  }
   const r=await apiPost(id?'updateEmployee':'addEmployee',p);
+  if(r&&r.code==='EMP_HAS_ASSETS'){toast('ปิดการใช้งานไม่ได้ — พนักงานยังถือครองอุปกรณ์ '+r.params.count+' เครื่อง ('+r.params.tags+')',1);return;}
   if(DEMO){if(id){Object.assign(DB.Employees.find(x=>x['Employee ID']===id),p);}else{if(DB.Employees.some(x=>x['Employee ID']===p['Employee ID'])){toast('Employee ID ซ้ำ',1);return;}DB.Employees.push(p);}}
   finishSave(r,'บันทึกพนักงานแล้ว');
 }
@@ -633,7 +657,7 @@ function modalPO(){
   showModal(mHead('สร้าง Purchase Order')+
     '<div class="modal-b"><div class="grid2">'+
     f('Vendor','po_vendor','')+f('Item Code','po_code','')+
-    f('Description','po_desc','')+f('IT Asset Type','po_type','')+
+    f('Description','po_desc','')+sel('IT Asset Type','po_type',ASSET_TYPES)+
     f('Qty','po_qty','type="number"')+f('Unit Price','po_price','type="number"')+
     f('Expected Date','po_exp','type="date"')+
     '</div></div>'+
@@ -647,31 +671,147 @@ async function savePO(){
   finishSave(r,'สร้าง PO แล้ว');
 }
 
+let RCV_ITEMS=[];
 function modalReceiving(){
+  RCV_ITEMS=[{tag:'',sn:''}];
   const pos=DB.PurchaseOrder.filter(p=>p.Status!=='Closed');
   showModal(mHead('รับของเข้าคลัง')+
-    '<div class="modal-b"><div class="grid2">'+
-    '<div class="field"><label>PO No.</label><select class="inp" id="gr_po"><option value="">— ไม่อ้างอิง PO —</option>'+pos.map(p=>'<option>'+p['PO No.']+'</option>').join('')+'</select></div>'+
+    '<div class="modal-b">'+
+    '<div class="grid3">'+
+    '<div class="field"><label>PO No.</label><select class="inp" id="gr_po" onchange="rcvOnPOChange()"><option value="">— ไม่อ้างอิง PO —</option>'+pos.map(p=>'<option>'+p['PO No.']+'</option>').join('')+'</select></div>'+
     sel('Site','gr_site',SITES)+
-    f('Finance Tag *','gr_tag','')+f('S/N','gr_sn','')+
-    f('Brand','gr_brand','')+f('Model','gr_model','')+
-    f('Invoice No.','gr_inv','')+f('Service/Exp Date','gr_exp','type="date"')+
-    sel('Condition','gr_cond',['New','Good','Fair'])+f('IT Received','gr_by','')+
-    '</div></div>'+
-    '<div class="modal-f"><button class="btn ghost" onclick="closeModal()">ยกเลิก</button><button class="btn pri" onclick="saveReceiving()">รับเข้า</button></div>');
+    '<div class="field"><label>จำนวนที่จะรับรอบนี้</label><input class="inp" id="gr_count" type="number" min="1" value="1" onchange="resizeRcvItems(parseInt(this.value)||1)"></div>'+
+    '</div>'+
+    '<div class="grid3" style="margin-top:12px">'+
+    f('Brand','gr_brand','')+f('Model','gr_model','')+sel('IT Asset Type','gr_type',ASSET_TYPES)+
+    '</div>'+
+    '<div class="grid3" style="margin-top:12px">'+
+    f('Invoice No.','gr_inv','')+
+    f('Service/Exp Date','gr_exp','type="date"')+
+    sel('Condition','gr_cond',['New','Good','Fair'])+
+    '</div>'+
+    '<div class="grid2" style="margin-top:12px">'+f('IT Received','gr_by','')+'</div>'+
+    '<div style="margin:18px 0 8px;display:flex;justify-content:space-between;align-items:center">'+
+      '<label style="font-size:12px;font-weight:600;color:var(--text-2)">รายการ Finance Tag / S/N</label>'+
+      '<button class="btn" style="padding:5px 11px" onclick="modalPasteExcel()">'+ic('plus')+'วางจาก Excel</button>'+
+    '</div>'+
+    '<div class="tbl-wrap" style="box-shadow:none;max-height:320px;overflow-y:auto"><table><thead><tr><th style="width:40px">#</th><th>Finance Tag</th><th>S/N</th><th style="width:36px"></th></tr></thead><tbody id="rcvItems"></tbody></table></div>'+
+    '</div>'+
+    '<div class="modal-f"><button class="btn ghost" onclick="closeModal()">ยกเลิก</button><button class="btn pri" onclick="saveReceivingBatch()">รับเข้าทั้งหมด</button></div>',true);
+  renderRcvItems();
 }
-async function saveReceiving(){
-  const tag=val('gr_tag');if(!tag){toast('กรอก Finance Tag',1);return;}
-  const p={'PO No.':val('gr_po'),'Site':val('gr_site'),'Finance Tag':tag,'S/N':val('gr_sn'),'Brand':val('gr_brand'),'Model':val('gr_model'),'Invoice No.':val('gr_inv'),'Service/Expiration Date':val('gr_exp'),'Condition':val('gr_cond'),'IT Received':val('gr_by')};
-  const r=await apiPost('addReceiving',p);
-  if(DEMO){
-    if(DB.AssetRegister.some(a=>a['Finance Tag']===tag)){toast('Finance Tag ซ้ำ',1);return;}
-    const gn='GR-'+String(DB.Receiving.length+1).padStart(3,'0');
-    DB.Receiving.push({'GR No.':gn,'PO No.':p['PO No.'],'Receive Date':td(),'Finance Tag':tag,'S/N':p['S/N'],'Brand':p.Brand,'Model':p.Model,'Cost':0,'Condition':p.Condition,'IT Received':p['IT Received']});
-    DB.AssetRegister.push({'No.':DB.AssetRegister.length+1,'Site':p.Site,'Asset Type':p.Model,'IT Asset Type':p.Model,'Brand':p.Brand,'Model':p.Model,'S/N':p['S/N'],'Finance Tag':tag,'Received Date':td(),'Status':'In Stock','Work Location':p.Site+' Office','row_id':'r'+Date.now()});
-    DB.AssetHistory.push({'Transaction ID':'TXN-'+String(DB.AssetHistory.length+1).padStart(4,'0'),'Date':td(),'Finance Tag':tag,'Transaction Type':'Received','From':'Vendor','To':'Stock','Employee':p['IT Received'],'Document No.':p['PO No.']});
+function rcvOnPOChange(){
+  const poNo=val('gr_po');
+  const po=DB.PurchaseOrder.find(p=>p['PO No.']===poNo);
+  const remain=po?Math.max(1,num(po.Qty)-num(po['Received Qty'])):1;
+  document.getElementById('gr_count').value=remain;
+  resizeRcvItems(remain);
+  if(po){document.getElementById('gr_brand').value=document.getElementById('gr_brand').value||'';}
+}
+function resizeRcvItems(n){
+  n=Math.max(1,n||1);
+  if(n>RCV_ITEMS.length){while(RCV_ITEMS.length<n)RCV_ITEMS.push({tag:'',sn:''});}
+  else{RCV_ITEMS=RCV_ITEMS.slice(0,n);}
+  document.getElementById('gr_count').value=n;
+  renderRcvItems();
+}
+function renderRcvItems(){
+  const tagCounts={};
+  RCV_ITEMS.forEach(it=>{const t=it.tag.trim();if(t)tagCounts[t]=(tagCounts[t]||0)+1;});
+  document.getElementById('rcvItems').innerHTML=RCV_ITEMS.map((it,i)=>{
+    const dup=it.tag.trim()&&tagCounts[it.tag.trim()]>1;
+    return '<tr><td class="mono">'+(i+1)+'</td>'+
+      '<td><input class="inp rcv-in" style="'+(dup?'border-color:var(--danger)':'')+'" data-i="'+i+'" data-f="tag" value="'+esc(it.tag)+'" placeholder="Finance Tag" oninput="RCV_ITEMS['+i+'].tag=this.value;markDup()" onkeydown="rcvKeydown(event,'+i+',\'tag\')"></td>'+
+      '<td><input class="inp rcv-in" data-i="'+i+'" data-f="sn" value="'+esc(it.sn)+'" placeholder="S/N" oninput="RCV_ITEMS['+i+'].sn=this.value" onkeydown="rcvKeydown(event,'+i+',\'sn\')"></td>'+
+      '<td><button class="x" onclick="removeRcvItem('+i+')">'+ic('trash')+'</button></td></tr>';
+  }).join('');
+}
+function markDup(){
+  const tagCounts={};
+  RCV_ITEMS.forEach(it=>{const t=it.tag.trim();if(t)tagCounts[t]=(tagCounts[t]||0)+1;});
+  document.querySelectorAll('.rcv-in[data-f="tag"]').forEach((el,i)=>{
+    const dup=RCV_ITEMS[i].tag.trim()&&tagCounts[RCV_ITEMS[i].tag.trim()]>1;
+    el.style.borderColor=dup?'var(--danger)':'';
+  });
+}
+function removeRcvItem(i){
+  RCV_ITEMS.splice(i,1);
+  if(!RCV_ITEMS.length)RCV_ITEMS.push({tag:'',sn:''});
+  document.getElementById('gr_count').value=RCV_ITEMS.length;
+  renderRcvItems();
+}
+function rcvKeydown(ev,i,field){
+  if(ev.key!=='Enter')return;
+  ev.preventDefault();
+  if(field==='tag'){
+    const next=document.querySelector('.rcv-in[data-i="'+i+'"][data-f="sn"]');
+    if(next)next.focus();
+  }else{
+    if(i===RCV_ITEMS.length-1){resizeRcvItems(RCV_ITEMS.length+1);}
+    setTimeout(()=>{const next=document.querySelector('.rcv-in[data-i="'+(i+1)+'"][data-f="tag"]');if(next)next.focus();},0);
   }
-  finishSave(r,'รับของเข้าคลังแล้ว');
+}
+function modalPasteExcel(){
+  showModal(mHead('วางจาก Excel')+
+    '<div class="modal-b">'+
+    '<p style="font-size:12.5px;color:var(--text-2);margin:0 0 10px">Copy 2 คอลัมน์จาก Excel (Finance Tag แล้ว Tab แล้ว S/N) แล้ววางในช่องนี้ หนึ่งบรรทัดต่อหนึ่งเครื่อง</p>'+
+    '<textarea class="inp" id="paste_area" rows="10" style="font-family:\'IBM Plex Mono\',monospace;font-size:12.5px" placeholder="CJLWFDCNB013	G185GC4&#10;CJLWFDCNB014	G186XX2"></textarea>'+
+    '</div>'+
+    '<div class="modal-f"><button class="btn ghost" onclick="closeModal();modalReceivingReopen()">ยกเลิก</button><button class="btn pri" onclick="applyPasteExcel()">นำเข้า</button></div>',true);
+}
+function applyPasteExcel(){
+  const raw=val('paste_area');
+  const lines=raw.split('\n').map(l=>l.trim()).filter(Boolean);
+  if(!lines.length){toast('ไม่มีข้อมูลให้นำเข้า',1);return;}
+  RCV_ITEMS=lines.map(l=>{
+    const parts=l.split(/\t|,/).map(x=>x.trim());
+    return {tag:parts[0]||'',sn:parts[1]||''};
+  });
+  toast('นำเข้า '+RCV_ITEMS.length+' รายการแล้ว');
+  modalReceivingReopen();
+}
+function modalReceivingReopen(){
+  // เก็บ state RCV_ITEMS ไว้ กลับไปหน้ารับของเดิมโดยไม่รีเซ็ตฟอร์มบน (จำลองการปิด modal ย่อยกลับ)
+  document.getElementById('modal').className='modal wide';
+  document.getElementById('overlay').classList.add('open');
+  // rebuild receiving modal shell with current RCV_ITEMS
+  const poVal=document.getElementById('gr_po')?document.getElementById('gr_po').value:'';
+  modalReceiving();
+  if(poVal)document.getElementById('gr_po').value=poVal;
+  document.getElementById('gr_count').value=RCV_ITEMS.length;
+  renderRcvItems();
+}
+async function saveReceivingBatch(){
+  const items=RCV_ITEMS.filter(it=>it.tag.trim());
+  if(!items.length){toast('กรอก Finance Tag อย่างน้อย 1 รายการ',1);return;}
+  const tags=items.map(it=>it.tag.trim());
+  const dupSet=tags.filter((t,i)=>tags.indexOf(t)!==i);
+  if(dupSet.length){toast('Finance Tag ซ้ำในล็อตนี้: '+[...new Set(dupSet)].join(', '),1);return;}
+
+  const common={'PO No.':val('gr_po'),'Site':val('gr_site'),'Brand':val('gr_brand'),'Model':val('gr_model'),'IT Asset Type':val('gr_type'),
+    'Invoice No.':val('gr_inv'),'Service/Expiration Date':val('gr_exp'),'Condition':val('gr_cond'),'IT Received':val('gr_by')};
+  const payloadItems=items.map(it=>({'Finance Tag':it.tag.trim(),'S/N':it.sn.trim()}));
+
+  const r=await apiPost('addReceivingBatch',{common,items:payloadItems});
+  if(r&&r.success===false){toast('ไม่สำเร็จ: '+r.code+(r.params&&r.params.tags?' ('+r.params.tags+')':''),1);return;}
+
+  if(DEMO){
+    const existing=new Set(DB.AssetRegister.map(a=>a['Finance Tag']));
+    const clash=payloadItems.find(it=>existing.has(it['Finance Tag']));
+    if(clash){toast('Finance Tag ซ้ำกับที่มีในระบบ: '+clash['Finance Tag'],1);return;}
+    const po=DB.PurchaseOrder.find(p=>p['PO No.']===common['PO No.']);
+    payloadItems.forEach(it=>{
+      const gn='GR-'+String(DB.Receiving.length+1).padStart(3,'0');
+      DB.Receiving.push({'GR No.':gn,'PO No.':common['PO No.'],'Receive Date':td(),'Finance Tag':it['Finance Tag'],'S/N':it['S/N'],'Brand':common.Brand,'Model':common.Model,'Cost':po?po['Unit Price']:0,'Condition':common.Condition,'IT Received':common['IT Received']});
+      DB.AssetRegister.push({'No.':DB.AssetRegister.length+1,'Site':common.Site,'Asset Type':po?po['IT Asset Type']:common['IT Asset Type'],'IT Asset Type':po?po['IT Asset Type']:common['IT Asset Type'],'Brand':common.Brand,'Model':common.Model,'S/N':it['S/N'],'Finance Tag':it['Finance Tag'],'Received Date':td(),'Service/Expiration Date':common['Service/Expiration Date'],'Status':'In Stock','Work Location':common.Site+' Office','row_id':'r'+Date.now()+Math.random()});
+      DB.AssetHistory.push({'Transaction ID':'TXN-'+String(DB.AssetHistory.length+1).padStart(4,'0'),'Date':td(),'Finance Tag':it['Finance Tag'],'Transaction Type':'Received','From':'Vendor','To':'Stock','Employee':common['IT Received'],'Document No.':common['PO No.']});
+    });
+    if(po){
+      po['Received Qty']=num(po['Received Qty'])+payloadItems.length;
+      po.Status=num(po['Received Qty'])>=num(po.Qty)?'Closed':(num(po['Received Qty'])>0?'Partially Received':'Open');
+    }
+  }
+  finishSave(r,'รับของเข้าคลังแล้ว '+payloadItems.length+' เครื่อง');
 }
 
 function modalEditAsset(tag){
@@ -693,47 +833,83 @@ async function saveEditAsset(tag){
 }
 
 let TR_ITEMS=[];
+let TR_FORM={};
 function modalTransfer(){
-  TR_ITEMS=[];
   const emps=DB.Employees.filter(e=>String(e.Active)!=='No');
+  const f0=TR_FORM;
   showModal(mHead('สร้างเอกสาร Transfer / Borrow')+
     '<div class="modal-b">'+
     '<div class="grid2">'+
-    '<div class="field"><label>Employee ID *</label><select class="inp" id="tr_emp" onchange="fillEmp()"><option value="">— เลือก —</option>'+emps.map(e=>'<option value="'+e['Employee ID']+'">'+e['Employee ID']+' · '+e.Name+'</option>').join('')+'</select></div>'+
-    sel('Type','tr_type',['Borrow','Transfer'])+
-    f('ชื่อ (auto)','tr_name','disabled')+f('แผนก / Site (auto)','tr_dept','disabled')+
-    f('IT Support (ผู้จัดทำ)','tr_by','')+f('Supervisor','tr_sup','')+
-    f('Description','tr_desc','')+
+    '<div class="field"><label>Employee ID *</label><select class="inp" id="tr_emp" onchange="fillEmp()"><option value="">— เลือก —</option>'+emps.map(e=>'<option value="'+e['Employee ID']+'"'+(f0.emp===e['Employee ID']?' selected':'')+'>'+e['Employee ID']+' · '+e.Name+'</option>').join('')+'</select></div>'+
+    sel('Type','tr_type',['Borrow','Transfer'],f0.type)+
+    f('ชื่อ (auto)','tr_name','disabled value="'+esc(f0.name||'')+'"')+f('แผนก / Site (auto)','tr_dept','disabled value="'+esc(f0.dept||'')+'"')+
+    f('IT Support (ผู้จัดทำ)','tr_by','value="'+esc(f0.by||'')+'"')+f('Supervisor','tr_sup','value="'+esc(f0.sup||'')+'"')+
+    f('Description','tr_desc','value="'+esc(f0.desc||'')+'"')+f('Due Date (สำหรับ Borrow)','tr_due','type="date" value="'+esc(f0.due||'')+'"')+
     '</div>'+
-    '<div style="margin:18px 0 8px;display:flex;justify-content:space-between;align-items:center"><label style="font-size:12px;font-weight:600;color:var(--text-2)">รายการอุปกรณ์ (In Stock)</label><button class="btn" style="padding:5px 11px" onclick="addTrItem()">'+ic('plus')+'เพิ่มเครื่อง</button></div>'+
-    '<div class="tbl-wrap" style="box-shadow:none"><table><thead><tr><th style="width:40px">#</th><th>Finance Tag</th><th>Device</th><th></th></tr></thead><tbody id="trItems"><tr><td colspan="4" class="empty" style="padding:20px">ยังไม่มีรายการ</td></tr></tbody></table></div>'+
+    '<div style="margin:18px 0 8px;display:flex;justify-content:space-between;align-items:center"><label style="font-size:12px;font-weight:600;color:var(--text-2)">รายการอุปกรณ์ ('+TR_ITEMS.length+' เครื่อง)</label><button class="btn" style="padding:5px 11px" onclick="saveTrFormState();modalPickAssets()">'+ic('plus')+'เลือกเครื่อง</button></div>'+
+    '<div class="tbl-wrap" style="box-shadow:none"><table><thead><tr><th style="width:40px">#</th><th>Finance Tag</th><th>Device</th><th></th></tr></thead><tbody id="trItems"></tbody></table></div>'+
     '</div>'+
-    '<div class="modal-f"><button class="btn ghost" onclick="closeModal()">ยกเลิก</button><button class="btn pri" onclick="saveTransfer()">สร้างเอกสาร</button></div>',true);
+    '<div class="modal-f"><button class="btn ghost" onclick="TR_ITEMS=[];TR_FORM={};closeModal()">ยกเลิก</button><button class="btn pri" onclick="saveTransfer()">สร้างเอกสาร</button></div>',true);
+  renderTrItems();
+  if(f0.emp)fillEmp();
+}
+function saveTrFormState(){
+  TR_FORM={emp:val('tr_emp'),type:val('tr_type'),name:val('tr_name'),dept:val('tr_dept'),by:val('tr_by'),sup:val('tr_sup'),desc:val('tr_desc'),due:val('tr_due')};
 }
 function fillEmp(){
   const e=DB.Employees.find(x=>x['Employee ID']===val('tr_emp'));
   if(e){document.getElementById('tr_name').value=e.Name;document.getElementById('tr_dept').value=e.Department+' · '+e.Site;}
 }
-function addTrItem(){
+let PICK_SEL=new Set();
+function modalPickAssets(){
+  showModal(mHead('เลือกอุปกรณ์ (In Stock)')+
+    '<div class="modal-b">'+
+    '<div class="search" style="margin-bottom:12px">'+ic('search')+'<input id="pick_q" placeholder="ค้นหา Finance Tag / S/N / Brand / Model" oninput="renderPickList()"></div>'+
+    '<div class="tbl-wrap" style="box-shadow:none;max-height:360px;overflow-y:auto"><table><thead><tr><th style="width:34px"></th><th>Finance Tag</th><th>S/N</th><th>Brand / Model</th></tr></thead><tbody id="pickList"></tbody></table></div>'+
+    '</div>'+
+    '<div class="modal-f"><button class="btn ghost" onclick="modalTransferFromPick()">ยกเลิก</button><button class="btn pri" id="pickConfirmBtn" onclick="confirmPick()">เพิ่มที่เลือก (0)</button></div>',true);
+  renderPickList();
+}
+function renderPickList(){
+  const q=val('pick_q').toLowerCase();
   const avail=DB.AssetRegister.filter(a=>a.Status==='In Stock'&&!TR_ITEMS.some(t=>t.tag===a['Finance Tag']));
-  if(!avail.length){toast('ไม่มีอุปกรณ์ In Stock เหลือ',1);return;}
-  TR_ITEMS.push({tag:avail[0]['Finance Tag']});
-  renderTrItems();
+  const rows=avail.filter(a=>!q||[a['Finance Tag'],a['S/N'],a.Brand,a.Model].some(x=>String(x||'').toLowerCase().includes(q)));
+  document.getElementById('pickList').innerHTML=rows.length?rows.map(a=>{
+    const checked=PICK_SEL.has(a['Finance Tag']);
+    return '<tr><td><input type="checkbox" '+(checked?'checked':'')+' onchange="togglePick(\''+esc(a['Finance Tag'])+'\',this.checked)"></td><td><span class="tag">'+esc(a['Finance Tag'])+'</span></td><td class="mono" style="font-size:12px">'+esc(a['S/N'])+'</td><td>'+esc(a.Brand)+' '+esc(a.Model)+'</td></tr>';
+  }).join(''):emptyRow(4,'ไม่พบอุปกรณ์ตรงคำค้นหา');
+  updatePickBtn();
+}
+function togglePick(tag,checked){
+  if(checked)PICK_SEL.add(tag);else PICK_SEL.delete(tag);
+  updatePickBtn();
+}
+function updatePickBtn(){
+  const btn=document.getElementById('pickConfirmBtn');
+  if(btn)btn.textContent='เพิ่มที่เลือก ('+PICK_SEL.size+')';
+}
+function confirmPick(){
+  if(!PICK_SEL.size){toast('เลือกอย่างน้อย 1 เครื่อง',1);return;}
+  PICK_SEL.forEach(tag=>{if(!TR_ITEMS.some(t=>t.tag===tag))TR_ITEMS.push({tag});});
+  PICK_SEL=new Set();
+  modalTransferFromPick();
+}
+function modalTransferFromPick(){
+  PICK_SEL=new Set();
+  modalTransfer();
 }
 function renderTrItems(){
-  const avail=DB.AssetRegister.filter(a=>a.Status==='In Stock');
-  document.getElementById('trItems').innerHTML=TR_ITEMS.length?TR_ITEMS.map((it,i)=>{
-    const opts=avail.filter(a=>a['Finance Tag']===it.tag||!TR_ITEMS.some(t=>t.tag===a['Finance Tag']));
-    return '<tr><td class="mono">'+(i+1)+'</td><td><select class="inp" onchange="TR_ITEMS['+i+'].tag=this.value">'+avail.map(a=>'<option value="'+a['Finance Tag']+'"'+(a['Finance Tag']===it.tag?' selected':'')+'>'+a['Finance Tag']+'</option>').join('')+'</select></td><td style="font-size:12px;color:var(--text-2)" id="trdev'+i+'">'+trDev(it.tag)+'</td><td><button class="x" onclick="TR_ITEMS.splice('+i+',1);renderTrItems()">'+ic('trash')+'</button></td></tr>';
-  }).join(''):'<tr><td colspan="4" class="empty" style="padding:20px">ยังไม่มีรายการ</td></tr>';
+  document.getElementById('trItems').innerHTML=TR_ITEMS.length?TR_ITEMS.map((it,i)=>
+    '<tr><td class="mono">'+(i+1)+'</td><td><span class="tag">'+esc(it.tag)+'</span></td><td style="font-size:12px;color:var(--text-2)">'+trDev(it.tag)+'</td><td><button class="x" onclick="TR_ITEMS.splice('+i+',1);renderTrItems()">'+ic('trash')+'</button></td></tr>'
+  ).join(''):'<tr><td colspan="4" class="empty" style="padding:20px">ยังไม่มีรายการ — กด "เลือกเครื่อง"</td></tr>';
 }
 function trDev(tag){const a=DB.AssetRegister.find(x=>x['Finance Tag']===tag);return a?esc(a.Brand+' '+a.Model):'';}
 async function saveTransfer(){
   const eid=val('tr_emp');if(!eid){toast('เลือกพนักงาน',1);return;}
-  if(!TR_ITEMS.length){toast('เพิ่มอุปกรณ์อย่างน้อย 1 เครื่อง',1);return;}
+  if(!TR_ITEMS.length){toast('เลือกอุปกรณ์อย่างน้อย 1 เครื่อง',1);return;}
   const e=DB.Employees.find(x=>x['Employee ID']===eid);
   const type=val('tr_type');
-  const header={'Employee ID':eid,'Employee Name':e.Name,'Position':e.Position,'Department':e.Department,'Site':e.Site,'Type':type,'Created By':val('tr_by'),'Supervisor Name':val('tr_sup'),'Description':val('tr_desc'),'Transfer Date':td()};
+  const header={'Employee ID':eid,'Employee Name':e.Name,'Position':e.Position,'Department':e.Department,'Site':e.Site,'Type':type,'Created By':val('tr_by'),'Supervisor Name':val('tr_sup'),'Description':val('tr_desc'),'Transfer Date':td(),'Due Date':type==='Borrow'?(val('tr_due')||''):''};
   const items=TR_ITEMS.map((it,i)=>{const a=DB.AssetRegister.find(x=>x['Finance Tag']===it.tag);return {'Finance Tag':it.tag,'Device':a['Asset Type'],'Brand':a.Brand,'Model':a.Model,'Serial Number':a['S/N']};});
   const r=await apiPost('createTransfer',{header,items});
   if(DEMO){
@@ -749,6 +925,7 @@ async function saveTransfer(){
     });
   }
   finishSave(r,'สร้างเอกสารแล้ว');
+  TR_ITEMS=[];TR_FORM={};
 }
 
 function modalReturn(docNo){
