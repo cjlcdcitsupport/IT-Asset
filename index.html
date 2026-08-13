@@ -169,13 +169,22 @@
   .cred-box{border:1.4px solid #333;padding:10px 14px;margin:14px 0;font-size:12.5px;background:#fffceb}
   .cred-box .r{display:flex;gap:10px;padding:3px 0}
   .cred-box .r b{min-width:120px;color:var(--text-2);font-weight:600}
+  .claim-item{padding:6px 0;border-bottom:1px dotted #d8dde6;font-size:12px;line-height:1.7}
+  .claim-item .n{font-weight:700;margin-right:5px}
+  .blank-line{border-bottom:1px dotted #888;display:inline-block;min-width:90px}
+  .chk-inline{display:inline-flex;align-items:center;gap:5px;margin-right:16px;font-size:12px;font-weight:600}
+  .chk-inline .box{width:11px;height:11px;border:1.3px solid #333;display:inline-flex;align-items:center;justify-content:center;font-size:9px;border-radius:2px}
+  .chk-inline.on .box::after{content:"✓"}
+  .official-box.wide .row2{grid-template-columns:230px 1fr}
   @media print{
     .side,.top,.toolbar,.no-print{display:none!important}
     .app{grid-template-columns:1fr}
     .content{padding:0;max-width:none}
     .doc-wrap{border:none;box-shadow:none;padding:0;max-width:none}
     body{background:#fff}
+    .page-break{page-break-before:always;break-before:page}
   }
+  .page-break{margin-top:40px;padding-top:36px;border-top:3px dashed #c9cfdb}
   @media(max-width:900px){
     .app{grid-template-columns:1fr}
     .side{position:fixed;left:-232px;z-index:50;transition:left .2s;width:232px}
@@ -378,20 +387,24 @@ let DEMO=!BACKEND_URL;
 // ================= DEMO DATA =================
 function seedDemo(){
   DB.Employees=[
-    {'Employee ID':'TH061233','Name':'Mr. Jamorn Srisoontorn','Position':'Site Manager - DC Operation','Department':'WFDC Operations','Site':'WFDC','Join Date':'2020-05-01','Mobile Phone No.':'081-234-5678','Email':'jamorn.sr@cj.net','CJ World ID':'jamornsr','CJ World Password':'JaSr2201','Computer Password':'cj87654321','Active':'Yes'},
-    {'Employee ID':'TH061693','Name':'Mr. Noppdon Chuaikhit','Position':'Supervisor-Reach Trucks Driver','Department':'CP Biz./CDC','Site':'WFDC','Join Date':'2026-07-16','Mobile Phone No.':'089-111-2222','Email':'noppdon.ch@cj.net','CJ World ID':'noppdonch','CJ World Password':'NoDo1315','Computer Password':'cj12345678','Active':'Yes'},
-    {'Employee ID':'CD004512','Name':'Ms. Suda Wongsai','Position':'IT Support','Department':'CDC IT','Site':'CDC','Join Date':'2022-01-10','Mobile Phone No.':'086-777-8888','Email':'suda.wo@cj.net','CJ World ID':'sudawo','CJ World Password':'SuWo7788','Computer Password':'cj11223344','Active':'Yes'}
+    {'Employee ID':'TH061233','Name':'Mr. Jamorn Srisoontorn','Position':'Site Manager - DC Operation','Department':'WFDC Operations','Division/Branch':'WFDC_Operations Support','Site':'WFDC','Join Date':'2020-05-01','Mobile Phone No.':'081-234-5678','Email':'jamorn.sr@cj.net','CJ World ID':'jamornsr','CJ World Password':'JaSr2201','Email Password':'cj87654321','Active':'Yes'},
+    {'Employee ID':'TH061693','Name':'Mr. Noppdon Chuaikhit','Position':'Supervisor-Reach Trucks Driver','Department':'CP Biz./CDC','Division/Branch':'WFDC_Operations Support','Site':'WFDC','Join Date':'2026-07-16','Mobile Phone No.':'089-111-2222','Email':'noppdon.ch@cj.net','CJ World ID':'noppdonch','CJ World Password':'NoDo1315','Email Password':'cj12345678','Active':'Yes'},
+    {'Employee ID':'CD004512','Name':'Ms. Suda Wongsai','Position':'IT Support','Department':'CDC IT','Division/Branch':'CDC_IT Support','Site':'CDC','Join Date':'2022-01-10','Mobile Phone No.':'086-777-8888','Email':'suda.wo@cj.net','CJ World ID':'sudawo','CJ World Password':'SuWo7788','Email Password':'cj11223344','Active':'Yes'},
+    {'Employee ID':'TH061720','Name':'Mr.Nithat Wanthawee','Position':'Officer-Productivity/KPI','Department':'CP Biz./CDC','Division/Branch':'CDC_Productivity&KPI Support','Site':'CDC','Join Date':'2026-08-03','Mobile Phone No.':'','Email':'nithat.wa@cj.net','CJ World ID':'nithatwa','CJ World Password':'NiWa0326','Email Password':'cj12345678','Active':'Yes'}
   ];
   DB.DeviceModels=[
-    {'Model Name':'HP ProBook 440 G10','Device Type':'NB','Brand':'HP','Product Name':'HP ProBook 440 G10','OS':'Win 11 Pro','Processor':'12th Gen Intel Core i7-1255U @1.70GHz','LCD':'14" FHD IPS 250 nits','Graphics':'Intel Iris Xe','Memory':'16 GB','Storage':'1 TB','Standard Cost':'31000','Standard Adaptor Price':'2118.60','Standard Mouse Price':'695.50','Warranty Years':'3'},
-    {'Model Name':'Dell OptiPlex 7010','Device Type':'PC','Brand':'Dell','Product Name':'Dell OptiPlex 7010 SFF','OS':'Win 11 Pro','Processor':'13th Gen Intel Core i5-13500','LCD':'-','Graphics':'Intel UHD 770','Memory':'16 GB','Storage':'512 GB SSD','Standard Cost':'24500','Standard Adaptor Price':'0','Standard Mouse Price':'350','Warranty Years':'3'}
+    {'Model Name':'HP ProBook 440 G10','Device Type':'NB','Brand':'HP','Product Name':'HP Probook 440 G10','OS':'Win11Pro 25H2','Processor':'12th Gen Intel(R) Core(TM) i7-1255U @ 1.70GHz','LCD':'14" diagonal, FHD (1920 x 1080),IPS, 250 nits','Graphics':'Intel(R) Iris® Xe Graphics 1920 x 1080','Memory':'16 GB','Storage':'1 TB','Standard Cost':'31000','Standard Adaptor Price':'2118.60','Standard Mouse Price':'695.50','Standard Bag Price':'1353.55','Warranty Years':'3'},
+    {'Model Name':'Dell OptiPlex 7010','Device Type':'PC','Brand':'Dell','Product Name':'Dell OptiPlex 7010 SFF','OS':'Win 11 Pro','Processor':'13th Gen Intel Core i5-13500','LCD':'-','Graphics':'Intel UHD 770','Memory':'16 GB','Storage':'512 GB SSD','Standard Cost':'24500','Standard Adaptor Price':'0','Standard Mouse Price':'350','Standard Bag Price':'0','Warranty Years':'3'},
+    {'Model Name':'Dell Pro 15 Essential PV15250','Device Type':'NB','Brand':'Dell','Product Name':'Dell Pro 15 Essential PV15250','OS':'Win11Pro 24H2','Processor':'13th Gen Intel® Core(TM) i7-1355U 1.70 GHZ','LCD':'14" diagonal, FHD (1920 x 1080),IPS, 250 nits','Graphics':'Intel(R) Iris® Xe Graphics 1920 x 1080','Memory':'16 GB','Storage':'512 GB','Standard Cost':'30500','Standard Adaptor Price':'1500','Standard Mouse Price':'200','Standard Bag Price':'990','Warranty Years':'3'}
   ];
   DB.AssetRegister=[
     mkAsset(1,'WFDC','NB Laptop','HP','HP ProBook 440 G10','G185GC4','CJLWFDCNB013','In Stock','','','',''),
     mkAsset(2,'WFDC','NB Laptop','HP','HP ProBook 440 G10','G186XX2','CJLWFDCNB014','Assigned','TH061693','Mr. Noppdon Chuaikhit','WFDC Operations','WFDC03-2026'),
     mkAsset(3,'CDC','PC Desktop','Dell','Dell OptiPlex 7010','DL77120','CJLCDCPC0031','Borrowed','CD004512','Ms. Suda Wongsai','CDC IT','CDC01-2026'),
     Object.assign(mkAsset(4,'HDC','Monitor','Dell','Dell P2422H','MN55210','CJLHDCMN0087','In Stock','','','',''),{'Service/Expiration Date':'2026-09-20'}),
-    mkAsset(5,'WFDC','Printer','Brother','Brother HL-L2375DW','PR90012','CJLWFDCPR0009','Repair','','','','')
+    mkAsset(5,'WFDC','Printer','Brother','Brother HL-L2375DW','PR90012','CJLWFDCPR0009','Repair','','','',''),
+    Object.assign(mkAsset(6,'CDC','NB Laptop','HP','HP ProBook 440 G10','5CD4276PZM','CJLCDCNB111','Assigned','TH061720','Mr.Nithat Wanthawee','CP Biz./CDC',''),{'Service/Expiration Date':'2027-09-06','Adaptor S/N':'','Mouse S/N':'0'}),
+    Object.assign(mkAsset(7,'CDC','NB Laptop','Dell','Dell Pro 15 Essential PV15250','5CD4276PZM','CJLCDCNB112','Assigned','TH061720','Mr.Nithat Wanthawee','CP Biz./CDC',''),{'Service/Expiration Date':'2027-09-06','Adaptor S/N':'','Mouse S/N':'0'})
   ];
   DB.PurchaseOrder=[
     {'PO No.':'PO-001','PO Date':'2026-06-10','Vendor':'IT Supply Co.','Description':'HP ProBook 440 G10','IT Asset Type':'NB Laptop','Qty':10,'Unit Price':31000,'Total':310000,'Expected Date':'2026-06-25','Received Qty':2,'Status':'Partially Received'},
@@ -598,6 +611,7 @@ function modalEmployee(id){
     f('ตำแหน่ง','e_pos','value="'+esc(e.Position||'')+'"')+
     sel('Site','e_site',SITES,e.Site)+
     f('แผนก','e_dept','value="'+esc(e.Department||'')+'"')+
+    f('ฝ่าย/สาขา (Division/Branch)','e_div','value="'+esc(e['Division/Branch']||'')+'"')+
     f('เบอร์โทร','e_phone','value="'+esc(e['Mobile Phone No.']||'')+'"')+
     f('วันเริ่มงาน','e_join','type="date" value="'+esc(e['Join Date']||'')+'"')+
     sel('สถานะ','e_active',['Yes','No'],e.Active==='No'?'No':'Yes')+
@@ -607,12 +621,12 @@ function modalEmployee(id){
     f('E-mail','e_email','value="'+esc(e.Email||'')+'"')+
     f('CJ World ID','e_cjid','value="'+esc(e['CJ World ID']||'')+'"')+
     f('CJ World Password','e_cjpw','value="'+esc(e['CJ World Password']||'')+'"')+
-    f('Cpmputer Password','e_emailpw','value="'+esc(e['Computer Password']||'')+'"')+
+    f('Email Password','e_emailpw','value="'+esc(e['Email Password']||'')+'"')+
     '</div></div>'+
     '<div class="modal-f"><button class="btn ghost" onclick="closeModal()">ยกเลิก</button><button class="btn pri" onclick="saveEmployee(\''+(id||'')+'\')">บันทึก</button></div>',true);
 }
 async function saveEmployee(id){
-  const p={'Employee ID':id||val('e_id'),'Name':val('e_name'),'Position':val('e_pos'),'Department':val('e_dept'),'Site':val('e_site'),'Join Date':val('e_join'),'Mobile Phone No.':val('e_phone'),'Email':val('e_email'),'CJ World ID':val('e_cjid'),'CJ World Password':val('e_cjpw'),'Computer Password':val('e_emailpw'),'Active':val('e_active')};
+  const p={'Employee ID':id||val('e_id'),'Name':val('e_name'),'Position':val('e_pos'),'Department':val('e_dept'),'Division/Branch':val('e_div'),'Site':val('e_site'),'Join Date':val('e_join'),'Mobile Phone No.':val('e_phone'),'Email':val('e_email'),'CJ World ID':val('e_cjid'),'CJ World Password':val('e_cjpw'),'Email Password':val('e_emailpw'),'Active':val('e_active')};
   if(!p['Employee ID']||!p.Name){toast('กรอก Employee ID และชื่อ',1);return;}
   if(id&&p.Active==='No'){
     const held=DB.AssetRegister.filter(a=>a['Employee ID']===id&&(a.Status==='Assigned'||a.Status==='Borrowed'));
@@ -642,11 +656,12 @@ function modalModel(name){
     f('Warranty (ปี)','m_war','type="number" value="'+esc(m['Warranty Years']||'')+'"')+
     f('ราคา Adaptor','m_adp','type="number" value="'+esc(m['Standard Adaptor Price']||'')+'"')+
     f('ราคา Mouse','m_mou','type="number" value="'+esc(m['Standard Mouse Price']||'')+'"')+
+    f('ราคา Bag','m_bag','type="number" value="'+esc(m['Standard Bag Price']||'')+'"')+
     '</div></div>'+
     '<div class="modal-f"><button class="btn ghost" onclick="closeModal()">ยกเลิก</button><button class="btn pri" onclick="saveModel(\''+(name||'')+'\')">บันทึก</button></div>');
 }
 async function saveModel(name){
-  const p={'Model Name':name||val('m_name'),'Device Type':val('m_type'),'Brand':val('m_brand'),'Product Name':val('m_prod'),'OS':val('m_os'),'Processor':val('m_cpu'),'LCD':val('m_lcd'),'Graphics':val('m_gpu'),'Memory':val('m_mem'),'Storage':val('m_sto'),'Standard Cost':val('m_cost'),'Standard Adaptor Price':val('m_adp'),'Standard Mouse Price':val('m_mou'),'Warranty Years':val('m_war')};
+  const p={'Model Name':name||val('m_name'),'Device Type':val('m_type'),'Brand':val('m_brand'),'Product Name':val('m_prod'),'OS':val('m_os'),'Processor':val('m_cpu'),'LCD':val('m_lcd'),'Graphics':val('m_gpu'),'Memory':val('m_mem'),'Storage':val('m_sto'),'Standard Cost':val('m_cost'),'Standard Adaptor Price':val('m_adp'),'Standard Mouse Price':val('m_mou'),'Standard Bag Price':val('m_bag'),'Warranty Years':val('m_war')};
   if(!p['Model Name']){toast('กรอกชื่อรุ่น',1);return;}
   const r=await apiPost(name?'updateModel':'addModel',p);
   if(DEMO){if(name){Object.assign(DB.DeviceModels.find(x=>x['Model Name']===name),p);}else{DB.DeviceModels.push(p);}}
@@ -1021,38 +1036,160 @@ function renderTransferPrint(docNo){
   )+
   '</div>';
 }
+function accLine(a){
+  if(!a)return '';
+  const parts=[];
+  if(a['Adaptor S/N'])parts.push('Adaptor 1');
+  if(a['Mouse S/N'])parts.push('Mouse 1');
+  if(a['Bag S/N'])parts.push('Bag 1');
+  return parts.join(' / ');
+}
+function blankLn(w){return '<span class="blank-line" style="min-width:'+(w||90)+'px"></span>';}
+function chkI(label,on){return '<span class="chk-inline'+(on?' on':'')+'"><span class="box"></span>'+label+'</span>';}
+function claimItem(no,label,content){return '<div class="claim-item"><span class="n">'+no+'</span>'+label+' — '+(content||'')+'</div>';}
+function offRowW(k,v){return '<div class="row2"><div class="lbl" style="width:230px">'+k+'</div><div class="val">'+esc(v||'')+'</div></div>';}
+function sigTH(label,dateLabel){
+  return '<div style="text-align:center;font-size:11.5px;line-height:2">'+
+    '<p>ลงนาม ..........................................................</p>'+
+    '<p>(..............................................)</p>'+
+    '<p>'+(dateLabel||'วันที่')+' .......................................</p>'+
+    '<p style="font-weight:600;margin-top:4px">'+label+'</p>'+
+  '</div>';
+}
+
 function renderReceiptPrint(eid){
   const e=DB.Employees.find(x=>x['Employee ID']===eid);if(!e)return;
   const assets=DB.AssetRegister.filter(a=>a['Employee ID']===eid);
+  const primary=assets.find(a=>a.Status==='Assigned'||a.Status==='Borrowed')||assets[0];
+  const isNB=!!primary&&/NB|Laptop/i.test(primary['Asset Type']||primary['IT Asset Type']||'');
+  const isPC=!!primary&&!isNB&&/PC|Desktop/i.test(primary['Asset Type']||primary['IT Asset Type']||'');
+  const docNo=primary?primary['Finance Tag']:'';
+
+  function itemLaptop(autoFill){
+    const a=autoFill?primary:null;
+    return chkI('Laptop',!!a&&isNB)+' S/N No.'+(a&&isNB?'<b class="mono">'+esc(a['S/N'])+'</b>':blankLn(110))+' จำนวน'+(a&&isNB?'<b>1</b>':blankLn(30))+'รายการ &nbsp; '+
+      chkI('Computer PC',!!a&&isPC)+' S/N No.'+(a&&isPC?'<b class="mono">'+esc(a['S/N'])+'</b>':blankLn(110))+' จำนวน'+(a&&isPC?'<b>1</b>':blankLn(30))+'รายการ'+
+      '<div style="margin-top:4px">อุปกรณ์เสริมอื่นๆ ระบุรายการ พร้อมจำนวน '+(a?('<b>'+(accLine(a)||'—')+'</b>'):blankLn(300))+'</div>';
+  }
+  function section(prefix,autoFill){
+    return claimItem(prefix+'.1','Laptop /Computer PC',itemLaptop(autoFill))+
+      claimItem(prefix+'.2','รถยนต์/จักรยานยนต์',chkI('รถยนต์',false)+' ป้ายทะเบียน '+blankLn(120)+' &nbsp; '+chkI('รถจักรยานยนต์',false)+' ป้ายทะเบียน '+blankLn(120))+
+      claimItem(prefix+'.3','บัตรจอดรถ','เลขที่บัตร '+blankLn(160))+
+      claimItem(prefix+'.4','บัตรเติมน้ำมัน (Fleet Card)','จำนวน '+blankLn(50)+' รายการ')+
+      claimItem(prefix+'.5','บัตร Easy Pass','จำนวน '+blankLn(50)+' รายการ')+
+      claimItem(prefix+'.6','กุญแจโต๊ะ/กุญแจตู้','จำนวน '+blankLn(50)+' รายการ')+
+      claimItem(prefix+'.7','โทรศัพท์มือถือและอุปกรณ์','หมายเลขโทรศัพท์ '+blankLn(160))+
+      claimItem(prefix+'.8','ชุดยูนิฟอร์มพนักงาน','เสื้อ '+blankLn(50)+' ตัว')+
+      claimItem(prefix+'.9','บัตรประกันกลุ่ม','เลขที่บัตร '+blankLn(160))+
+      claimItem(prefix+'.10','บัตรพนักงาน+สายคล้อง/โยโย่','เลขที่บัตร '+blankLn(160))+
+      claimItem(prefix+'.11','อื่นๆ ระบุ',blankLn(300));
+  }
+
   document.getElementById('printArea').innerHTML=
-  '<div class="doc-wrap"><div class="doc-title"><h2>ใบรับ-คืนทรัพย์สินบริษัทฯ</h2><p>Company Asset Receipt and Return Form</p></div>'+
-  '<div class="doc-meta">'+row('Employee',e.Name)+row('Employee ID',e['Employee ID'])+row('Department',e.Department)+row('Site',e.Site)+row('Position',e.Position)+row('Join Date',e['Join Date'])+row('Mobile',e['Mobile Phone No.'])+'</div>'+
-  '<table class="doc-tbl"><thead><tr><th>Finance Tag</th><th>Item</th><th>Brand / Model</th><th>S/N</th></tr></thead><tbody>'+
-  (assets.length?assets.map(a=>'<tr><td>'+esc(a['Finance Tag'])+'</td><td>'+esc(a['Asset Type'])+'</td><td>'+esc(a.Brand+' '+a.Model)+'</td><td>'+esc(a['S/N'])+'</td></tr>').join(''):'<tr><td colspan="4" style="text-align:center;color:#888">— ไม่มีทรัพย์สิน IT ที่ผูกกับพนักงานนี้ —</td></tr>')+
-  '</tbody></table>'+
-  '<p style="font-size:11.5px;color:var(--text-2)">หมายเหตุ: รายการนอก IT (รถ, บัตรจอดรถ, Fleet Card, Easy Pass, ยูนิฟอร์ม, บัตรประกัน ฯลฯ) กรอกด้วยมือบนเอกสารที่พิมพ์</p>'+
-  '<div class="sign-row"><div class="sign"><div class="line"></div><p>ผู้รับทรัพย์สิน</p></div><div class="sign"><div class="line"></div><p>ผู้จัดการแผนก (Manager / HOD)</p></div></div>'+
-  '<div class="sign-row" style="margin-top:36px"><div class="sign"><div class="line"></div><p>แผนก HR</p></div><div class="sign"><div class="line"></div><p>แผนก IT</p></div></div>'+
+  '<div class="doc-wrap">'+
+  '<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px">'+
+    '<div style="font-weight:800;font-size:15px;letter-spacing:.5px">CJ <span style="color:var(--accent)">LOGISTICS</span></div>'+
+    '<div style="text-align:right;font-size:11px;color:var(--text-2)">Doc.No.<br><b style="font-size:13px;color:var(--text)">'+esc(docNo||'—')+'</b></div>'+
+  '</div>'+
+  '<div class="doc-title" style="margin-bottom:16px"><h2>ใบรับ-คืนทรัพย์สินบริษัทฯ</h2><p>Company Asset Receipt and Return Form</p></div>'+
+  '<div class="official-box wide" style="margin-bottom:18px">'+
+    offRowW('พนักงานชื่อ-นามสกุล (Employee Name)',e.Name)+
+    offRowW('รหัสพนักงาน (Employee No.)',e['Employee ID'])+
+    offRowW('เบอร์มือถือ (Mobile Phone No.)',e['Mobile Phone No.'])+
+    offRowW('แผนก/กลุ่มงาน (Department/Section)',e.Position)+
+    offRowW('ฝ่าย/สาขา (Division/Branch)',e['Division/Branch'])+
+    offRowW('วันเริ่มงาน (Join Date)',fmtDate(e['Join Date']))+
+  '</div>'+
+  '<div class="sec-h">1. รายการรับทรัพย์สิน</div>'+
+  '<div style="border:1px solid #b7bfcf;border-top:none;padding:10px 14px 4px">'+section('1',true)+'</div>'+
+  '<div class="split2" style="margin-top:26px">'+sigTH('ผู้รับทรัพย์สิน')+sigTH('พยาน / ผู้จัดการแผนก (Manager/HOD)')+'</div>'+
+  '<div class="sec-h" style="margin-top:30px">2. รายการคืนทรัพย์สิน</div>'+
+  '<p style="font-size:11.5px;color:var(--text-2);margin:10px 0 0">โดยมีสถานะความเป็นพนักงานวันสุดท้ายในวันที่ '+blankLn(120)+' &nbsp; ปฏิบัติงานวันสุดท้ายในวันที่ '+blankLn(120)+'</p>'+
+  '<div style="border:1px solid #b7bfcf;border-top:none;padding:10px 14px 4px;margin-top:8px">'+section('2',false)+'</div>'+
+  '<div class="sec-h" style="margin-top:30px">3. ลงนามผู้รับคืนทรัพย์สิน</div>'+
+  '<div class="split2" style="margin-top:12px">'+
+    '<div style="font-size:11.5px;line-height:1.6">'+
+      '<p>ข้าพเจ้าขอรับรองว่า ข้าพเจ้าได้คืนทรัพย์สินของบริษัทฯ อย่างครบถ้วนและถูกต้องแล้ว</p>'+
+      '<p style="margin-bottom:14px">พนักงานส่งคืนทรัพย์สินทั้งหมด ให้กับผู้จัดการแผนก (Manager/HOD)</p>'+
+      sigTH('ผู้คืนทรัพย์สิน','วันที่คืน')+
+      '<div style="margin-top:18px">'+sigTH('ผู้จัดการแผนก (Manager/HOD) (ผู้รับทรัพย์สิน ลำดับที่1)','วันที่รับทรัพย์สินคืน')+'</div>'+
+    '</div>'+
+    '<div style="font-size:11.5px;line-height:1.6">'+
+      '<p>ผู้จัดการแผนก (Manager/HOD)ส่งใบรับ-คืนทรัพย์สิน พร้อมทรัพย์สินทั้งหมดให้แผนก HR</p>'+
+      '<p style="margin-bottom:14px">แผนกบุคคล (HR) เก็บทรัพย์สินทั้งหมด ยกเว้น Notebook/Laptop และอุปกรณ์ส่งคืนแผนก IT</p>'+
+      sigTH('แผนก HR (ผู้รับทรัพย์สิน ลำดับที่2)','วันที่รับทรัพย์สินคืน')+
+      '<div style="margin-top:18px">'+sigTH('แผนก IT (ผู้รับทรัพย์สิน ลำดับสุดท้าย)','วันที่รับทรัพย์สินคืน')+'</div>'+
+    '</div>'+
+  '</div>'+
+  '<p style="font-size:10.5px;color:var(--text-3);margin-top:26px;text-align:right">F-HR-22-R.00</p>'+
   '</div>';
 }
 function cell3(label,val){return '<div class="cell3"><b>'+label+'</b>'+esc(val||'')+'</div>';}
-function specRow(item,val,sn){return '<tr><td style="font-weight:500">'+esc(item)+'</td><td>'+esc(val||'')+'</td><td></td><td class="mono" style="font-size:11.5px">'+esc(sn||'')+'</td><td></td></tr>';}
-
-function renderSpecPrint(eid){
-  const e=DB.Employees.find(x=>x['Employee ID']===eid);if(!e)return;
-  const asset=DB.AssetRegister.find(a=>a['Employee ID']===eid);
-  const model=asset?DB.DeviceModels.find(m=>m['Model Name']===asset.Model):null;
-  if(!model){
-    document.getElementById('printArea').innerHTML='<div class="doc-wrap"><p style="color:#b3261e">พนักงานนี้ยังไม่มีเครื่องที่ผูกรุ่นใน Device Models — เลือกเครื่องที่รุ่นถูกลงทะเบียนไว้ก่อน</p></div>';
-    return;
-  }
-  document.getElementById('printArea').innerHTML=
-  '<div class="doc-wrap">'+
-  '<div class="doc-title" style="margin-bottom:14px"><h2>Details of all component Equipment when you receive.</h2><p>Acknowledge and Receive</p></div>'+
+const POLICY_TH={
+  sec1:['พนักงานจะได้รับเอกสารทั้งในรูปแบบ Hard Copy หรือ Soft Copy พร้อมลายเซ็นรับทราบทางอีเมล',
+    'หากเกิดกรณีอุปกรณ์ IT มีปัญหาร้ายแรง เช่น Notebook เสีย น้ำหก หรือปัญหาไฟฟ้า กรุณาตรวจสอบและแจ้งติดตามทันที<br>&nbsp;&nbsp;2.1 ห้ามพนักงานซ่อมอุปกรณ์ด้วยตนเอง และต้องแจ้งแผนก IT ทันที',
+    'ห้ามเพิ่ม เปลี่ยน หรือถอดอุปกรณ์ภายใน เช่น Hard Disk, RAM, CPU หรือชิ้นส่วนใด ๆ',
+    'ห้ามติดตั้งโปรแกรมที่ไม่ใช่มาตรฐานของบริษัทลงใน Notebook หรือ Desktop',
+    'พนักงานต้องรับทราบเงื่อนไขที่ทำให้ประกันสิ้นสุด ตามเอกสารนี้'],
+  sec2a:['แผนก IT จะไม่รับผิดชอบความเสียหายที่เกิดจากการใช้งานผิดปกติของ Hardware และจะไม่ครอบคลุมการรับประกันจาก Vendor',
+    'หากอุปกรณ์สูญหาย ผู้ใช้งานต้องรับผิดชอบค่าใช้จ่ายในการเปลี่ยนอุปกรณ์ใหม่ ตามรายละเอียดด้านล่าง'],
+  sec2note:'หมายเหตุ: ราคาชิ้นส่วนอื่นๆ พิจารณาเป็นกรณีไป',
+  sec2b:['หากอุปกรณ์เสียหายจากน้ำ กาแฟ หรือของเหลวอื่นๆ ผู้ใช้งานหรือผู้ถือครองทรัพย์สิน ต้องรับผิดชอบค่าใช้จ่ายที่อาจเกิดขึ้น',
+    'การรับประกันไม่ครอบคลุมกรณีอุบัติเหตุ ตกแตก หรือถูกของหนักทับ ผู้ใช้งานหรือผู้ถือครองทรัพย์สิน ต้องรับผิดชอบค่าใช้จ่ายที่อาจเกิดขึ้น',
+    'การรับประกันครอบคลุมการใช้งานปกติยกเว้นแบตเตอรี่ที่รับประกันเพียง 1 ปี'],
+  usage:[['หลีกเลี่ยงความร้อน','Notebook มีพื้นที่ระบายความร้อนจำกัด ความร้อนสะสมอาจทำให้อายุการใช้งานสั้นลง ควรพักเครื่องเมื่อใช้งานต่อเนื่องเป็นเวลานาน'],
+    ['หลีกเลี่ยงการกระแทก','Notebook เป็นอุปกรณ์อิเล็กทรอนิกส์ที่ค่อนข้างบอบบางและเสียหายได้ง่ายกว่าอุปกรณ์ประเภทอื่น ดังนั้นควรหลีกเลี่ยงแรงกระแทกหรือการตกหล่นระหว่างการเดินทาง ควรเก็บ Notebook ไว้ในกระเป๋าสำหรับ Notebook โดยเฉพาะ หรือกระเป๋าที่มีการป้องกันตลอดเวลา เพื่อช่วยลดความเสียหายที่อาจเกิดขึ้นครับ'],
+    ['การดูแลหน้าจอ LCD','หลีกเลี่ยงการสัมผัสหน้าจอด้วยนิ้วมือหรือวัตถุแข็ง ควรทำความสะอาดหน้าจออย่างถูกวิธีโดยใช้น้ำยาสำหรับทำความสะอาดหน้าจอโดยเฉพาะร่วมกับผ้าเช็ดหน้าจอ หรือใช้ผ้าชุบน้ำหมาดๆ (ไม่เปียกจนเกินไป) ห้ามฉีดน้ำหรือสารทำความสะอาดลงบนหน้าจอโดยตรงโดยเด็ดขาด ควรฉีดลงบนผ้าก่อน แล้วจึงนำมาเช็ด'],
+    ['สำรองข้อมูลเป็นประจำ','ข้อมูลของ Notebook จะถูกจัดเก็บอยู่ภายใน Hard Disk ของตัวเครื่อง ดังนั้นหากเกิดปัญหากับ Hard Disk ไม่ว่าจะเกิดจากไวรัส อุบัติเหตุ หรือแรงกระแทกรุนแรง เช่น Notebook ตก อาจส่งผลให้ข้อมูลเสียหายหรือสูญหายได้ ดังนั้นผู้ใช้งานควรสำรองข้อมูล (Backup) ไว้อย่างสม่ำเสมอครับ'],
+    ['หลีกเลี่ยงฝุ่นและความชื้น','ฝุ่นถือเป็นศัตรูของ Notebook เนื่องจากฝุ่นสามารถเกาะสะสมบนวงจรภายในเครื่องได้ และเมื่อสะสมเป็นเวลานาน จะทำให้ระบบระบายความร้อนทำงานได้ยาก ส่งผลให้เครื่องร้อนง่ายขึ้น ความชื้นก็เป็นอีกปัจจัยที่ส่งผลเสียต่ออุปกรณ์อิเล็กทรอนิกส์ อาจทำให้เกิดสนิมหรือความเสียหายต่ออุปกรณ์ ส่งผลให้อายุการใช้งานของ Notebook สั้นลงกว่าปกติครับ'],
+    ['ศึกษาคู่มือการใช้งาน','Notebook แต่ละรุ่นอาจมีคุณสมบัติและรูปแบบการใช้งานที่แตกต่างกัน ดังนั้นคู่มือการใช้งานจึงเป็นสิ่งสำคัญสำหรับตัวเครื่อง ผู้ใช้งานควรศึกษาคู่มือที่มาพร้อมกับ Notebook ให้ละเอียด เพื่อให้สามารถใช้งานอุปกรณ์ได้อย่างถูกต้องและเหมาะสม'],
+    ['หากอุปกรณ์มีปัญหา','หาก Notebook มีอาการผิดปกติไม่ว่าจะเป็นปัญหาด้าน Software หรือ Hardware ห้ามถอดแยกหรือแกะอุปกรณ์ด้วยตนเองโดยเด็ดขาด เพราะอาจทำให้อุปกรณ์เสียหายหรือทำให้ประกันสิ้นสุด ควรนำส่งศูนย์บริการหรือปรึกษาแผนก IT ทันที'],
+    ['ข้อยกเว้นการรับประกัน','ห้ามเก็บ Notebook ไว้ใต้ฝากระโปรงท้ายรถขณะขับขี่ เนื่องจากอาจเกิดแรงกระแทกและความร้อนสะสม หรือห้ามโหลด Notebook ไว้ในช่องเก็บสัมภาระใต้ท้องเครื่องบิน เพราะอาจมีสัมภาระอื่นวางทับจนทำให้อุปกรณ์เสียหายได้']],
+  sec3:['พนักงานต้องลงนามในแบบฟอร์มคืนทรัพย์สินเมื่อสิ้นสุดการเป็นพนักงาน',
+    'พนักงานต้องนำอุปกรณ์ IT ทั้งหมดมาคืนด้วยตนเอง ตามรายละเอียดอุปกรณ์ที่ได้รับข้างต้น ให้กับแผนก IT เมื่อสิ้นสุดการจ้างงาน']
+};
+const POLICY_EN={
+  sec1:['You will receive all these document with sign off Hard copy and Soft copy via mail.',
+    'In case, there are any critical cases with IT equipment for example notebook broken, water pouring or any electrical fault. Please review and follow up. IT don\u2019t allow you to repair them. You have to inform IT Department immediately.',
+    'IT don\u2019t allow you to add/change/remove any internal hardware into your Equipment for example Internal Hard Disk, Memory, CPU and any part in equipment.',
+    'IT don\u2019t allow you to install non-standard Software into your notebooks and desktops.',
+    'You have to concern for the warranty void cases attached in this document.'],
+  sec2a:['IT is not liable for any use Abnormal about HardWare ( NoteBook or PCs ) and will not cover waranty from our Vender.',
+    'IT will change users if a device is lost. Active adults will need to buy a replacement. As detailed below.'],
+  sec2note:'Note: Any part prices upto case by case',
+  sec2b:['If water or coffee or other liquids spill damage Users will have to be paid.',
+    'The warranty does not cover in case of an accident, a fall break, was the insert, are heavy objects Users will have to be paid.',
+    'The warranty covers all equipment. If waste from normal use. Only batteries that are guaranteed for only one year.'],
+  usage:[['Avoid heat','The notebook has a rather limited space for cooling have some heat accumulated inside. These heat may result in the operation of electronic equipment within a shorter lifespan. If you use the notebook for a while, then the unit has a high heat. We should stay off the air to heat the air to cool down.'],
+    ['Avoid concussion','The effect is to make laptops that are easily damaged most. Because the appliance Notebook, that our resolution and fragile than other types of electronic equipment. So time travel should keep a notebook in a briefcase with all the time here.'],
+    ['Maintenance LCD display','Avoid touching the screen with your finger or a solid. Clean the screen properly, the solution can be purchased and used cloth for cleaning the screen in particular, or use a damp cloth (just recently banned too wet) to clean the screen. Do not spray water or detergent on the screen is strictly prohibited. Should water or cleaning solution onto the cloth first and then to wipe.'],
+    ['Back up important data regularly','The notebook is stored on the harddisk of the hardware itself. So if anything happens to your harddisk, whether it is a virus. Notebook or accident that caused severe concussion, such as notebook falls, it may be that this resource damage it. Therefore, you should always have a backup.'],
+    ['Avoid dust and humidity','Dust is the enemy of the Notebook, it\u2019s not because of the dust that can bind to the circuit on our machine. And when the dust has accumulated over time to make our notebook cooling difficult. Humidity is not allergic to dust so insidious. Because every piece of electronic equipment will consist of a copper wire coil and a capacitor in. If the humidity is too, it may rust with these devices. As a result, our notebook to depart earlier than normal.'],
+    ['Study the manual thoroughly.','Notebook models may have a different profile. The Manual is a South Jersey Vedic valuable for the notebook itself. Therefore, we should study the manual that came with the notebook category. For use with notebooks and need to be here.'],
+    ['If there is a fault Should contact the center immediately or IT.','If the notebook is good symptoms. Whether the issues Do not disassemble any software or hardware, sheep or sheep-picking parts of the notebook is strictly prohibited. It may cause damage or loss insurance. Should be brought to the center for advice immediately.'],
+    ['Except of Warranty.','Do not keep Notebook under the trunk lid While driving, it will cause shock and get heat, or place the Notebook on the aircraft luggage compartment. Which may have baggage placed on top, causing damage.']],
+  sec3:['Employees are required to sign the asset return form upon termination of employment.',
+    'Employees are required to return all IT equipment by themselves, according to the details listed above and the items received, to the IT Department upon termination of employment.']
+};
+function specPage(e,asset,model,lang,pageLabel){
+  const T=lang==='th';
+  const P=T?POLICY_TH:POLICY_EN;
+  const title=T?'รายละเอียดอุปกรณ์ทั้งหมดที่ท่านได้รับ':'Details of all component Equipment when you receive.';
+  const sub='Acknowledge and Receive';
+  const s1h=T?'ส่วนที่ 1 : ข้อตกลงเกี่ยวกับอุปกรณ์ IT':'Part I : The Agreement for IT Equipment';
+  const s2h=T?'ส่วนที่ 2 : คำแนะนำจาก IT และกรณีประกันสิ้นสุด':'Part 2 : IT Suggestion and warranty void cases.';
+  const s2sub=T?'เงื่อนไขและข้อกำหนด':'Term & Condition';
+  const s2usage=T?'คำแนะนำในการใช้งาน Notebook':'Recommend for use NoteBook';
+  const s3h=T?'ส่วนที่ 3 : การคืนอุปกรณ์ IT':'Part 3 : Return IT Equipment';
+  const ackBy=T?'Acknowledge By':'Acknowledge By';
+  const priceHead=model.Brand||'';
+  return '<div class="doc-wrap'+(pageLabel==='2/2'?' page-break':'')+'" style="position:relative">'+
+  '<div style="position:absolute;top:0;right:0;font-size:11px;color:var(--text-3)">'+pageLabel+'</div>'+
+  '<div class="doc-title" style="margin-bottom:14px"><h2 style="font-size:17px">'+title+'</h2><p>'+sub+'</p></div>'+
   '<div class="official-box g3" style="margin-bottom:16px">'+
-    cell3('Employee ID',e['Employee ID']+'  <<')+cell3('Start Date',fmtDate(asset['Transfer Date']))+cell3('Expiration Date',fmtDate(asset['Service/Expiration Date']))+
+    cell3('Employee ID',e['Employee ID']+'  <<')+cell3('Start Date',fmtDate(asset['Transfer Date']))+'<div class="cell3"></div>'+
     cell3('Name',e.Name)+cell3('Position',e.Position)+'<div class="cell3"></div>'+
-    cell3('Division',e.Department)+cell3('Site',e.Site)+'<div class="cell3"></div>'+
+    cell3('Division',e.Department)+cell3('Site',e.Site)+cell3('Expiration Date',fmtDate(asset['Service/Expiration Date']))+
   '</div>'+
   '<table class="doc-tbl"><thead><tr><th>Computer Name</th><th>Item</th><th>Value</th><th>Barcode</th><th>Serial Number</th><th>Location</th></tr></thead><tbody>'+
   '<tr><td rowspan="12" style="font-weight:700;vertical-align:top;background:#f7f8fb">'+esc(asset['Finance Tag'])+'</td>'+
@@ -1069,43 +1206,25 @@ function renderSpecPrint(eid){
   '<tr><td>Bag</td><td>'+esc(model.Brand)+' Bag</td><td></td><td class="mono" style="font-size:11.5px">'+esc(asset['Bag S/N'])+'</td><td></td></tr>'+
   '<tr><td>Peripherals</td><td>'+esc(asset['Peripherals Remark']||'-')+'</td><td></td><td></td><td></td></tr>'+
   '</tbody></table>'+
-  '<div style="margin-top:26px;max-width:360px">'+
-    '<div class="line"></div><p style="font-size:12px">Acknowledge By ______________ Date ____________</p>'+
+  '<div style="margin-top:18px;max-width:360px">'+
+    '<div class="line"></div><p style="font-size:12px">'+ackBy+' ______________ Date ____________</p>'+
     '<p style="font-size:12.5px;font-weight:600;margin-top:6px">'+esc(e.Name)+'</p>'+
     '<p style="font-size:12px;color:var(--text-2)">Position: '+esc(e.Position)+'</p>'+
     '<p style="font-size:12px;color:var(--text-2)">Sender by: '+esc(asset['IT Received']||'')+'</p>'+
   '</div>'+
   '<div class="policy">'+
-    '<h4>ส่วนที่ 1: ข้อตกลงเกี่ยวกับอุปกรณ์ IT</h4>'+
-    '<p>1. พนักงานจะได้รับเอกสารทั้งในรูปแบบ Hard Copy และ Soft Copy พร้อมลายเซ็นรับทราบทางอีเมล</p>'+
-    '<p>2. หากเกิดกรณีอุปกรณ์ IT มีปัญหาขัดข้อง เช่น Notebook เสีย น้ำหก หรือปัญหาไฟฟ้า กรุณาแจ้งและติดตามทันที</p>'+
-    '<p>&nbsp;&nbsp;2.1 ห้ามพนักงานซ่อมอุปกรณ์ด้วยตนเอง และต้องแจ้งแผนก IT ทันที</p>'+
-    '<p>3. ห้ามเพิ่ม เปลี่ยน หรือถอดอุปกรณ์ภายใน เช่น Hard Disk, RAM, CPU หรือชิ้นส่วนใดๆ</p>'+
-    '<p>4. ห้ามติดตั้งโปรแกรมที่ไม่ได้มาตรฐานขององค์กรบน Notebook หรือ Desktop</p>'+
-    '<p>5. พนักงานต้องรับทราบเงื่อนไขการรับประกันตามเอกสารนี้</p>'+
-    '<h4>ส่วนที่ 2: ค่าใช้จ่ายจาก IT และกรณีสิ้นสุดการรับประกัน</h4>'+
-    '<p><b>เงื่อนไขและข้อกำหนด</b></p>'+
-    '<p>1. แผนก IT จะไม่รับผิดชอบความเสียหายที่เกิดจากการใช้งานผิดประเภทของ Hardware และจะไม่ครอบคลุมการรับประกันจาก Vendor</p>'+
-    '<p>2. หากอุปกรณ์สูญหาย ผู้ใช้จะต้องรับผิดชอบค่าใช้จ่ายในการเปลี่ยนอุปกรณ์ใหม่ ตามรายละเอียดด้านล่าง</p>'+
-    '<table class="doc-tbl" style="max-width:340px;margin:8px 0 12px"><thead><tr><th>อุปกรณ์</th><th>ราคา</th></tr></thead><tbody>'+
+    '<h4>'+s1h+'</h4>'+P.sec1.map((t,i)=>'<p>'+(i+1)+'. '+t+'</p>').join('')+
+    '<h4>'+s2h+'</h4><p><b>'+s2sub+'</b></p>'+P.sec2a.map((t,i)=>'<p>'+(i+1)+'. '+t+'</p>').join('')+
+    '<table class="doc-tbl" style="max-width:340px;margin:8px 0 4px"><thead><tr><th>'+esc(priceHead)+'</th><th>'+esc(priceHead)+'/Price</th></tr></thead><tbody>'+
       '<tr><td>Adaptor</td><td class="mono">'+money(model['Standard Adaptor Price'])+' Baht</td></tr>'+
       '<tr><td>Mouse</td><td class="mono">'+money(model['Standard Mouse Price'])+' Baht</td></tr>'+
+      '<tr><td>Bag</td><td class="mono">'+money(model['Standard Bag Price'])+' Baht</td></tr>'+
     '</tbody></table>'+
-    '<p>3. หากพนักงานลาออกก่อนกำหนดหรือทำให้ทรัพย์สินของบริษัทฯ เสียหาย บริษัทฯ สงวนสิทธิ์ในการเรียกเก็บค่าเสียหายภายใน 1 ปี</p>'+
-    '<p>4. การรับประกันไม่ครอบคลุมความเสียหายจากอุบัติเหตุหรือการทำร้ายทางกายภาพ</p>'+
-    '<p>5. การรับประกันไม่ครอบคลุมการใช้งานที่ผิดวิธี เกินขอบเขต หรือไม่ปฏิบัติตามคู่มือ</p>'+
-    '<p><b>ข้อกำหนดในการรับประกัน Notebook</b></p>'+
-    '<p>1. หลักเกณฑ์ความรับผิดชอบ — ผู้ใช้งานต้องรับผิดชอบต่อความเสียหายที่เกิดจากการใช้งานอันเกี่ยวข้องกับตนเองเป็นสำคัญ</p>'+
-    '<p>2. หลักเกณฑ์การดูแลรักษา — Notebook เป็นอุปกรณ์อิเล็กทรอนิกส์ที่ต้องอยู่ในความดูแลอย่างดีเสมอ หากพบความเสียหายจากการใช้งานผิดวิธี ให้แจ้งกลับมาที่แผนก IT ทันทีเพื่อดำเนินการตรวจสอบหรือเปลี่ยนใหม่</p>'+
-    '<p>3. การดูแลรักษาหน้าจอ LCD — ห้ามวางสิ่งของหรือวัตถุมีคมบนหน้าจอ Notebook และห้ามเช็ดหน้าจอด้วยกระดาษทิชชู่ ผ้าหยาบ หรือผ้าเปียกน้ำ</p>'+
-    '<p>4. สำรองข้อมูลเป็นประจำ — ข้อมูลสำคัญควรสำรอง (Backup) อย่างสม่ำเสมอ หาก Hard Disk มีปัญหาไม่ว่ากรณีใด บริษัทฯ ไม่มีส่วนรับผิดชอบในการกู้ข้อมูล</p>'+
-    '<p>5. หลักเกณฑ์การเบิกจ่าย — ผู้เบิกอุปกรณ์ต้องตรวจสอบความถูกต้องครบถ้วนตั้งแต่วันที่รับมอบ และแจ้งแผนก IT ก่อนดำเนินการใดๆ ที่เกี่ยวกับอุปกรณ์ทุกครั้ง บริษัทฯ ขอสงวนสิทธิ์ในการเข้าถึงอุปกรณ์และซอฟต์แวร์เมื่อพนักงานลาออก</p>'+
-    '<p>6. ค่าใช้จ่ายกรณีสูญหาย — หาก Notebook ชำรุดเสียหายจากความประมาทเลินเล่อของผู้ใช้งาน ผู้ใช้จะต้องรับผิดชอบค่าเสียหายเต็มจำนวนตามราคาประเมิน</p>'+
-    '<p>7. ห้ามกระทำผิดกฎหมาย — ห้ามนำเครื่องคอมพิวเตอร์ไปใช้กระทำผิดกฎหมายไม่ว่ากรณีใด ถือเป็นความรับผิดชอบส่วนบุคคลของผู้ใช้งานโดยตรง</p>'+
-    '<p>8. ห้ามปรับแต่งเครื่อง — ห้ามปรับแต่งโปรแกรมหรือค่าเครื่องคอมพิวเตอร์ หากพบว่ามีการกระทำดังกล่าวจนเกิดความเสียหาย ผู้ใช้งานต้องรับผิดชอบค่าเสียหายที่เกิดขึ้นทั้งหมด</p>'+
-    '<h4>ส่วนที่ 3: การคืนอุปกรณ์ IT</h4>'+
-    '<p>3.1 พนักงานต้องคืนอุปกรณ์ทันทีเมื่อสิ้นสุดสถานะการเป็นพนักงาน</p>'+
-    '<p>3.2 พนักงานต้องส่งมอบอุปกรณ์ IT ที่หมดความจำเป็นในการใช้งานคืนให้แผนก IT เมื่อสิ้นสุดการจ้างงาน</p>'+
+    '<p style="font-size:10.5px;color:var(--text-3);margin-bottom:10px">'+P.sec2note+'</p>'+
+    P.sec2b.map((t,i)=>'<p>'+(i+3)+'. '+t+'</p>').join('')+
+    '<p><b>'+s2usage+'</b></p>'+
+    P.usage.map((u,i)=>'<p>'+(i+1)+'. '+u[0]+'<br><span style="padding-left:14px;display:inline-block">'+(i+1)+'.1 '+u[1]+'</span></p>').join('')+
+    '<h4>'+s3h+'</h4>'+P.sec3.map((t,i)=>'<p>3.'+(i+1)+' '+t+'</p>').join('')+
   '</div>'+
   '<div class="official-box" style="margin-top:18px"><div class="sec-h" style="border:none">Company Assets (IT Equipment)</div>'+
     offRow('Employee name',e.Name)+offRow('E-mail',e.Email)+offRow('Position',e.Position)+offRow('Division',e.Department)+
@@ -1114,14 +1233,26 @@ function renderSpecPrint(eid){
     '<div class="r"><b>User / CJ ID</b><span>'+esc(e['CJ World ID']||'')+'</span></div>'+
     '<div class="r"><b>Password</b><span class="mono">'+esc(e['CJ World Password']||'')+'</span></div>'+
     '<div class="r"><b>Email</b><span>'+esc(e.Email||'')+'</span></div>'+
-    '<div class="r"><b>Computer Password</b><span class="mono">'+esc(e['Computer Password']||'')+'</span></div>'+
+    '<div class="r"><b>Email Password</b><span class="mono">'+esc(e['Email Password']||'')+'</span></div>'+
   '</div>'+
   '<div class="sign-row" style="margin-top:30px">'+
     '<div class="sign" style="text-align:left"><div class="line" style="max-width:280px"></div><p>Employee Acknowledge &amp; Receive: ____________  Date: ____________</p></div>'+
     '<div class="sign" style="text-align:left"><div class="line" style="max-width:280px"></div><p>Employee return: ____________  Date: ____________</p></div>'+
   '</div>'+
   '<p style="font-size:11.5px;color:var(--text-2);margin-top:14px">NOTED: ______________________________________________________________</p>'+
+  '<p style="font-size:10.5px;color:var(--text-3);margin-top:18px;text-align:center;border-top:1px solid var(--line);padding-top:10px">Referenced to IT assets you receiving from IT Department. There are 3 parts of IT document that you have to sign off for acceptance and have to follow up them.<br>เอกสารที่เกี่ยวข้องกับสินทรัพย์ด้านไอทีที่คุณได้รับจากฝ่ายไอทีนั้น มีทั้งหมด 3 ส่วน ที่คุณต้องลงนามรับรองเพื่อยอมรับให้เรียบร้อย</p>'+
   '</div>';
+}
+function renderSpecPrint(eid){
+  const e=DB.Employees.find(x=>x['Employee ID']===eid);if(!e)return;
+  const asset=DB.AssetRegister.find(a=>a['Employee ID']===eid);
+  const model=asset?DB.DeviceModels.find(m=>m['Model Name']===asset.Model):null;
+  if(!model){
+    document.getElementById('printArea').innerHTML='<div class="doc-wrap"><p style="color:#b3261e">พนักงานนี้ยังไม่มีเครื่องที่ผูกรุ่นใน Device Models — เลือกเครื่องที่รุ่นถูกลงทะเบียนไว้ก่อน</p></div>';
+    return;
+  }
+  document.getElementById('printArea').innerHTML=
+    specPage(e,asset,model,'th','1/2')+specPage(e,asset,model,'en','2/2');
 }
 function row(k,v){return '<div class="row"><b>'+k+':</b><span>'+esc(v||'—')+'</span></div>';}
 
