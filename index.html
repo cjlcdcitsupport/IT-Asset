@@ -378,9 +378,9 @@ let DEMO=!BACKEND_URL;
 // ================= DEMO DATA =================
 function seedDemo(){
   DB.Employees=[
-    {'Employee ID':'TH061233','Name':'Mr. Jamorn Srisoontorn','Position':'Site Manager - DC Operation','Department':'WFDC Operations','Site':'WFDC','Join Date':'2020-05-01','Mobile Phone No.':'081-234-5678','Email':'jamorn.sr@cj.net','CJ World ID':'jamornsr','CJ World Password':'JaSr2201','Email Password':'cj87654321','Active':'Yes'},
-    {'Employee ID':'TH061693','Name':'Mr. Noppdon Chuaikhit','Position':'Supervisor-Reach Trucks Driver','Department':'CP Biz./CDC','Site':'WFDC','Join Date':'2026-07-16','Mobile Phone No.':'089-111-2222','Email':'noppdon.ch@cj.net','CJ World ID':'noppdonch','CJ World Password':'NoDo1315','Email Password':'cj12345678','Active':'Yes'},
-    {'Employee ID':'CD004512','Name':'Ms. Suda Wongsai','Position':'IT Support','Department':'CDC IT','Site':'CDC','Join Date':'2022-01-10','Mobile Phone No.':'086-777-8888','Email':'suda.wo@cj.net','CJ World ID':'sudawo','CJ World Password':'SuWo7788','Email Password':'cj11223344','Active':'Yes'}
+    {'Employee ID':'TH061233','Name':'Mr. Jamorn Srisoontorn','Position':'Site Manager - DC Operation','Department':'WFDC Operations','Site':'WFDC','Join Date':'2020-05-01','Mobile Phone No.':'081-234-5678','Email':'jamorn.sr@cj.net','CJ World ID':'jamornsr','CJ World Password':'JaSr2201','Computer Password':'cj87654321','Active':'Yes'},
+    {'Employee ID':'TH061693','Name':'Mr. Noppdon Chuaikhit','Position':'Supervisor-Reach Trucks Driver','Department':'CP Biz./CDC','Site':'WFDC','Join Date':'2026-07-16','Mobile Phone No.':'089-111-2222','Email':'noppdon.ch@cj.net','CJ World ID':'noppdonch','CJ World Password':'NoDo1315','Computer Password':'cj12345678','Active':'Yes'},
+    {'Employee ID':'CD004512','Name':'Ms. Suda Wongsai','Position':'IT Support','Department':'CDC IT','Site':'CDC','Join Date':'2022-01-10','Mobile Phone No.':'086-777-8888','Email':'suda.wo@cj.net','CJ World ID':'sudawo','CJ World Password':'SuWo7788','Computer Password':'cj11223344','Active':'Yes'}
   ];
   DB.DeviceModels=[
     {'Model Name':'HP ProBook 440 G10','Device Type':'NB','Brand':'HP','Product Name':'HP ProBook 440 G10','OS':'Win 11 Pro','Processor':'12th Gen Intel Core i7-1255U @1.70GHz','LCD':'14" FHD IPS 250 nits','Graphics':'Intel Iris Xe','Memory':'16 GB','Storage':'1 TB','Standard Cost':'31000','Standard Adaptor Price':'2118.60','Standard Mouse Price':'695.50','Warranty Years':'3'},
@@ -607,12 +607,12 @@ function modalEmployee(id){
     f('E-mail','e_email','value="'+esc(e.Email||'')+'"')+
     f('CJ World ID','e_cjid','value="'+esc(e['CJ World ID']||'')+'"')+
     f('CJ World Password','e_cjpw','value="'+esc(e['CJ World Password']||'')+'"')+
-    f('Email Password','e_emailpw','value="'+esc(e['Email Password']||'')+'"')+
+    f('Cpmputer Password','e_emailpw','value="'+esc(e['Computer Password']||'')+'"')+
     '</div></div>'+
     '<div class="modal-f"><button class="btn ghost" onclick="closeModal()">ยกเลิก</button><button class="btn pri" onclick="saveEmployee(\''+(id||'')+'\')">บันทึก</button></div>',true);
 }
 async function saveEmployee(id){
-  const p={'Employee ID':id||val('e_id'),'Name':val('e_name'),'Position':val('e_pos'),'Department':val('e_dept'),'Site':val('e_site'),'Join Date':val('e_join'),'Mobile Phone No.':val('e_phone'),'Email':val('e_email'),'CJ World ID':val('e_cjid'),'CJ World Password':val('e_cjpw'),'Email Password':val('e_emailpw'),'Active':val('e_active')};
+  const p={'Employee ID':id||val('e_id'),'Name':val('e_name'),'Position':val('e_pos'),'Department':val('e_dept'),'Site':val('e_site'),'Join Date':val('e_join'),'Mobile Phone No.':val('e_phone'),'Email':val('e_email'),'CJ World ID':val('e_cjid'),'CJ World Password':val('e_cjpw'),'Computer Password':val('e_emailpw'),'Active':val('e_active')};
   if(!p['Employee ID']||!p.Name){toast('กรอก Employee ID และชื่อ',1);return;}
   if(id&&p.Active==='No'){
     const held=DB.AssetRegister.filter(a=>a['Employee ID']===id&&(a.Status==='Assigned'||a.Status==='Borrowed'));
@@ -1114,7 +1114,7 @@ function renderSpecPrint(eid){
     '<div class="r"><b>User / CJ ID</b><span>'+esc(e['CJ World ID']||'')+'</span></div>'+
     '<div class="r"><b>Password</b><span class="mono">'+esc(e['CJ World Password']||'')+'</span></div>'+
     '<div class="r"><b>Email</b><span>'+esc(e.Email||'')+'</span></div>'+
-    '<div class="r"><b>Email Password</b><span class="mono">'+esc(e['Email Password']||'')+'</span></div>'+
+    '<div class="r"><b>Computer Password</b><span class="mono">'+esc(e['Computer Password']||'')+'</span></div>'+
   '</div>'+
   '<div class="sign-row" style="margin-top:30px">'+
     '<div class="sign" style="text-align:left"><div class="line" style="max-width:280px"></div><p>Employee Acknowledge &amp; Receive: ____________  Date: ____________</p></div>'+
