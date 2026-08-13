@@ -640,7 +640,7 @@ async function saveEmployee(id){
   }
   const r=await apiPost(id?'updateEmployee':'addEmployee',p);
   if(r&&r.code==='EMP_HAS_ASSETS'){toast('ปิดการใช้งานไม่ได้ — พนักงานยังถือครองอุปกรณ์ '+r.params.count+' เครื่อง ('+r.params.tags+')',1);return;}
-  if(DEMO){if(id){Object.assign(DB.Employees.find(x=>x['Employee ID']===id),p);}else{if(DB.Employees.some(x=>x['Employee ID']===p['Employee ID'])){toast('Employee ID ซ้ำ',1);return;}DB.Employees.push(p);}}
+  if(DEMO){if(id){const t=DB.Employees.find(x=>x['Employee ID']===id);if(t)Object.assign(t,p);}else{if(DB.Employees.some(x=>x['Employee ID']===p['Employee ID'])){toast('Employee ID ซ้ำ',1);return;}DB.Employees.push(p);}}
   finishSave(r,'บันทึกพนักงานแล้ว');
 }
 
@@ -670,7 +670,7 @@ async function saveModel(name){
   const p={'Model Name':name||val('m_name'),'Device Type':val('m_type'),'Brand':val('m_brand'),'Product Name':val('m_prod'),'OS':val('m_os'),'Processor':val('m_cpu'),'LCD':val('m_lcd'),'Graphics':val('m_gpu'),'Memory':val('m_mem'),'Storage':val('m_sto'),'Standard Cost':val('m_cost'),'Standard Adaptor Price':val('m_adp'),'Standard Mouse Price':val('m_mou'),'Standard Bag Price':val('m_bag'),'Warranty Years':val('m_war')};
   if(!p['Model Name']){toast('กรอกชื่อรุ่น',1);return;}
   const r=await apiPost(name?'updateModel':'addModel',p);
-  if(DEMO){if(name){Object.assign(DB.DeviceModels.find(x=>x['Model Name']===name),p);}else{DB.DeviceModels.push(p);}}
+  if(DEMO){if(name){const t=DB.DeviceModels.find(x=>x['Model Name']===name);if(t)Object.assign(t,p);}else{DB.DeviceModels.push(p);}}
   finishSave(r,'บันทึกรุ่นแล้ว');
 }
 
@@ -860,7 +860,7 @@ function fillEaModelBrand(){
 async function saveEditAsset(tag){
   const p={'Finance Tag':tag,'Model':val('ea_model'),'Brand':val('ea_brand'),'Work Location':val('ea_loc'),'Status':val('ea_status'),'Service/Expiration Date':val('ea_exp'),'Remark':val('ea_remark')};
   const r=await apiPost('editAsset',p);
-  if(DEMO){Object.assign(DB.AssetRegister.find(x=>x['Finance Tag']===tag),{'Model':p.Model,'Brand':p.Brand,'Work Location':p['Work Location'],'Status':p.Status,'Service/Expiration Date':p['Service/Expiration Date'],'Remark':p.Remark});}
+  if(DEMO){const t=DB.AssetRegister.find(x=>x['Finance Tag']===tag);if(t)Object.assign(t,{'Model':p.Model,'Brand':p.Brand,'Work Location':p['Work Location'],'Status':p.Status,'Service/Expiration Date':p['Service/Expiration Date'],'Remark':p.Remark});}
   finishSave(r,'แก้ไขแล้ว');
 }
 
@@ -931,21 +931,25 @@ function modalTransferFromPick(){
   modalTransfer();
 }
 function renderTrItems(){
-  document.getElementById('trItems').innerHTML=TR_ITEMS.length?TR_ITEMS.map((it,i)=>
-    '<tr><td class="mono">'+(i+1)+'</td><td><span class="tag">'+esc(it.tag)+'</span></td><td style="font-size:12px;color:var(--text-2)">'+trDev(it.tag)+'</td><td><button class="x" onclick="TR_ITEMS.splice('+i+',1);renderTrItems()">'+ic('trash')+'</button></td></tr>'
-  ).join(''):'<tr><td colspan="4" class="empty" style="padding:20px">ยังไม่มีรายการ — กด "เลือกเครื่อง"</td></tr>';
+  document.getElementById('trItems').innerHTML=TR_ITEMS.length?TR_ITEMS.map((it,i)=>{
+    const a=DB.AssetRegister.find(x=>x['Finance Tag']===it.tag);
+    const dev=a?esc(a.Brand+' '+a.Model):'<span style="color:var(--danger);font-weight:600">⚠ ไม่พบเครื่องนี้ในระบบ — กรุณาลบออก</span>';
+    return '<tr'+(a?'':' style="background:var(--danger-bg)"')+'><td class="mono">'+(i+1)+'</td><td><span class="tag">'+esc(it.tag)+'</span></td><td style="font-size:12px;color:var(--text-2)">'+dev+'</td><td><button class="x" onclick="TR_ITEMS.splice('+i+',1);renderTrItems()">'+ic('trash')+'</button></td></tr>';
+  }).join(''):'<tr><td colspan="4" class="empty" style="padding:20px">ยังไม่มีรายการ — กด "เลือกเครื่อง"</td></tr>';
 }
 function trDev(tag){const a=DB.AssetRegister.find(x=>x['Finance Tag']===tag);return a?esc(a.Brand+' '+a.Model):'';}
 async function saveTransfer(){
   const eid=val('tr_emp');if(!eid){toast('เลือกพนักงาน',1);return;}
   if(!TR_ITEMS.length){toast('เลือกอุปกรณ์อย่างน้อย 1 เครื่อง',1);return;}
   const e=DB.Employees.find(x=>x['Employee ID']===eid);
+  if(!e){toast('ไม่พบพนักงานรหัส '+eid+' ในระบบ',1);return;}
   const type=val('tr_type');
   const header={'Employee ID':eid,'Employee Name':e.Name,'Position':e.Position,'Department':e.Department,'Site':e.Site,'Type':type,'Created By':val('tr_by'),'Supervisor Name':val('tr_sup'),'Description':val('tr_desc'),'Transfer Date':td(),'Due Date':type==='Borrow'?(val('tr_due')||''):''};
   const items=[];
   for(const it of TR_ITEMS){
     const a=DB.AssetRegister.find(x=>x['Finance Tag']===it.tag);
     if(!a){toast('ไม่พบ Finance Tag "'+it.tag+'" ในระบบ — ลบรายการนี้ออกแล้วเลือกเครื่องใหม่จาก "เลือกเครื่อง"',1);return;}
+    if(a.Status!=='In Stock'){toast('เครื่อง "'+it.tag+'" ไม่อยู่ในสถานะ In Stock แล้ว (ปัจจุบัน: '+a.Status+') — กรุณารีเฟรชแล้วเลือกใหม่',1);return;}
     items.push({'Finance Tag':it.tag,'Device':a['Asset Type'],'Brand':a.Brand,'Model':a.Model,'Serial Number':a['S/N']});
   }
   const r=await apiPost('createTransfer',{header,items});
@@ -957,7 +961,7 @@ async function saveTransfer(){
     items.forEach((it,i)=>{
       DB.TransferItems.push(Object.assign({'Document No.':docNo,'No.':i+1},it));
       const a=DB.AssetRegister.find(x=>x['Finance Tag']===it['Finance Tag']);
-      Object.assign(a,{'Status':type==='Transfer'?'Assigned':'Borrowed','Employee ID':eid,'Owner Name':e.Name,'Department':e.Department,'Document No.':docNo});
+      if(a)Object.assign(a,{'Status':type==='Transfer'?'Assigned':'Borrowed','Employee ID':eid,'Owner Name':e.Name,'Department':e.Department,'Document No.':docNo});
       DB.AssetHistory.push({'Transaction ID':'TXN-'+String(DB.AssetHistory.length+1).padStart(4,'0'),'Date':td(),'Finance Tag':it['Finance Tag'],'Transaction Type':type==='Transfer'?'Transferred':'Borrowed','From':'Stock','To':e.Name,'Employee':e.Name,'Department':e.Department,'Document No.':docNo});
     });
   }
@@ -978,7 +982,7 @@ async function saveReturn(docNo){
   const r=await apiPost('markReturned',p);
   if(DEMO){
     const d=DB.TransferDocument.find(x=>x['Document No.']===docNo);
-    Object.assign(d,{'Doc Status':'Returned','Return Date':p['Return Date'],'Employee Name Return':p['Employee Name Return']});
+    if(d)Object.assign(d,{'Doc Status':'Returned','Return Date':p['Return Date'],'Employee Name Return':p['Employee Name Return']});
     DB.TransferItems.filter(i=>i['Document No.']===docNo).forEach(it=>{
       const a=DB.AssetRegister.find(x=>x['Finance Tag']===it['Finance Tag']);
       if(a)Object.assign(a,{'Status':'In Stock','Employee ID':'','Owner Name':'','Department':'','Document No.':''});
@@ -1306,6 +1310,13 @@ function toast(msg,err){
   t.innerHTML=(err?ic('x'):ic('check'))+'<span>'+esc(msg)+'</span>';
   clearTimeout(toastT);toastT=setTimeout(()=>t.className='',2600);
 }
+// ดักทุก error ที่หลุดออกมา ไม่ให้ระบบเงียบสนิทโดยผู้ใช้ไม่รู้ตัว
+window.addEventListener('error',function(ev){
+  toast('เกิดข้อผิดพลาด: '+(ev.message||'ไม่ทราบสาเหตุ')+' — ลองรีเฟรชหน้า (Ctrl+Shift+R)',1);
+});
+window.addEventListener('unhandledrejection',function(ev){
+  toast('เกิดข้อผิดพลาด: '+((ev.reason&&ev.reason.message)||ev.reason||'ไม่ทราบสาเหตุ'),1);
+});
 
 // ================= BOOT =================
 function td(){return new Date().toISOString().split('T')[0];}
