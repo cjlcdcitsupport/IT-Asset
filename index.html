@@ -180,13 +180,26 @@
   .chk-inline .box{width:11px;height:11px;border:1.3px solid #333;display:inline-flex;align-items:center;justify-content:center;font-size:9px;border-radius:2px}
   .chk-inline.on .box::after{content:"✓"}
   .official-box.wide .row2{grid-template-columns:230px 1fr}
+  @page{size:A4;margin:12mm 10mm}
   @media print{
-    .side,.top,.toolbar,.no-print{display:none!important}
+    .side,.top,.toolbar,.no-print,#toast,#overlay{display:none!important}
     .app{grid-template-columns:1fr}
     .content{padding:0;max-width:none}
-    .doc-wrap{border:none;box-shadow:none;padding:0;max-width:none}
+    .doc-wrap{border:none;box-shadow:none;padding:0;max-width:none;font-size:11px}
     body{background:#fff}
-    .page-break{page-break-before:always;break-before:page}
+    .page-break{page-break-before:always;break-before:page;margin-top:0;padding-top:0;border-top:none}
+    .doc-tbl{page-break-inside:auto}
+    .doc-tbl tr{page-break-inside:avoid;break-inside:avoid}
+    .doc-tbl thead{display:table-header-group}
+    .policy,.official-box,.cred-box,.sign-row{page-break-inside:avoid;break-inside:avoid}
+    .policy h4{page-break-after:avoid;break-after:avoid}
+    .policy{font-size:9.5px;line-height:1.5;margin-top:12px}
+    .policy h4{font-size:11px;margin:10px 0 4px}
+    .policy p{margin:2px 0}
+    .cred-box{font-size:10.5px;padding:7px 10px;margin:10px 0}
+    .claim-item{font-size:10px;line-height:1.5;padding:4px 0}
+    .doc-title h2{font-size:14px}
+    .official-box,.cred-box,.doc-tbl{margin-top:10px}
   }
   .page-break{margin-top:40px;padding-top:36px;border-top:3px dashed #c9cfdb}
   @media(max-width:900px){
@@ -341,7 +354,7 @@
             <option value="spec">3 · Notebook / PC Spec Handover</option>
           </select>
           <select class="inp" id="pDoc" style="width:260px"></select>
-          <button class="btn pri" onclick="window.print()"><i data-ic="printer"></i>Print</button>
+          <button class="btn pri" onclick="doPrintDoc()"><i data-ic="printer"></i>Print</button>
         </div>
         <div id="printArea"><div class="empty">เลือกเทมเพลตและเอกสารเพื่อแสดงตัวอย่างก่อนปริ๊น</div></div>
       </section>
@@ -408,7 +421,8 @@ function seedDemo(){
     Object.assign(mkAsset(4,'HDC','Monitor','Dell','Dell P2422H','MN55210','CJLHDCMN0087','In Stock','','','',''),{'Service/Expiration Date':'2026-09-20'}),
     mkAsset(5,'WFDC','Printer','Brother','Brother HL-L2375DW','PR90012','CJLWFDCPR0009','Repair','','','',''),
     Object.assign(mkAsset(6,'CDC','NB Laptop','HP','HP ProBook 440 G10','5CD4276PZM','CJLCDCNB111','Assigned','TH061720','Mr.Nithat Wanthawee','CP Biz./CDC',''),{'Service/Expiration Date':'2027-09-06','Adaptor S/N':'','Mouse S/N':'0'}),
-    Object.assign(mkAsset(7,'CDC','NB Laptop','Dell','Dell Pro 15 Essential PV15250','5CD4276PZM','CJLCDCNB112','Assigned','TH061720','Mr.Nithat Wanthawee','CP Biz./CDC',''),{'Service/Expiration Date':'2027-09-06','Adaptor S/N':'','Mouse S/N':'0'})
+    Object.assign(mkAsset(7,'CDC','NB Laptop','Dell','Dell Pro 15 Essential PV15250','5CD4276PZM','CJLCDCNB112','Assigned','TH061720','Mr.Nithat Wanthawee','CP Biz./CDC',''),{'Service/Expiration Date':'2027-09-06','Adaptor S/N':'','Mouse S/N':'0'}),
+    Object.assign(mkAsset(8,'WFDC','NB Laptop','HP','HP ProBook 440 G10','GXN95678','','In Stock','','','',''),{'Finance Tag':9990890014307,'Service/Expiration Date':'2029-08-31'})
   ];
   DB.PurchaseOrder=[
     {'PO No.':'PO-001','PO Date':'2026-06-10','Vendor':'IT Supply Co.','Description':'HP ProBook 440 G10','IT Asset Type':'NB Laptop','Qty':10,'Unit Price':31000,'Total':310000,'Expected Date':'2026-06-25','Received Qty':2,'Status':'Partially Received'},
@@ -865,7 +879,7 @@ async function saveReceivingBatch(){
 }
 
 function modalEditAsset(tag){
-  const a=DB.AssetRegister.find(x=>x['Finance Tag']===tag);if(!a)return;
+  const a=DB.AssetRegister.find(x=>sameTag(x['Finance Tag'],tag));if(!a)return;
   const modelNames=[...new Set(DB.DeviceModels.map(m=>m['Model Name']))];
   const mismatch=modelMismatch(a);
   showModal(mHead('แก้ไขทรัพย์สิน · '+tag)+
@@ -888,7 +902,7 @@ function fillEaModelBrand(){
 async function saveEditAsset(tag){
   const p={'Finance Tag':tag,'Model':val('ea_model'),'Brand':val('ea_brand'),'Work Location':val('ea_loc'),'Status':val('ea_status'),'Service/Expiration Date':val('ea_exp'),'Remark':val('ea_remark')};
   const r=await apiPost('editAsset',p);
-  if(DEMO){const t=DB.AssetRegister.find(x=>x['Finance Tag']===tag);if(t)Object.assign(t,{'Model':p.Model,'Brand':p.Brand,'Work Location':p['Work Location'],'Status':p.Status,'Service/Expiration Date':p['Service/Expiration Date'],'Remark':p.Remark});}
+  if(DEMO){const t=DB.AssetRegister.find(x=>sameTag(x['Finance Tag'],tag));if(t)Object.assign(t,{'Model':p.Model,'Brand':p.Brand,'Work Location':p['Work Location'],'Status':p.Status,'Service/Expiration Date':p['Service/Expiration Date'],'Remark':p.Remark});}
   finishSave(r,'แก้ไขแล้ว');
 }
 
@@ -932,15 +946,17 @@ function modalPickAssets(){
 }
 function renderPickList(){
   const q=val('pick_q').toLowerCase();
-  const avail=DB.AssetRegister.filter(a=>a.Status==='In Stock'&&!TR_ITEMS.some(t=>t.tag===a['Finance Tag']));
+  const avail=DB.AssetRegister.filter(a=>a.Status==='In Stock'&&!TR_ITEMS.some(t=>sameTag(t.tag,a['Finance Tag'])));
   const rows=avail.filter(a=>!q||[a['Finance Tag'],a['S/N'],a.Brand,a.Model].some(x=>String(x||'').toLowerCase().includes(q)));
   document.getElementById('pickList').innerHTML=rows.length?rows.map(a=>{
-    const checked=PICK_SEL.has(a['Finance Tag']);
-    return '<tr><td><input type="checkbox" '+(checked?'checked':'')+' onchange="togglePick(\''+esc(a['Finance Tag'])+'\',this.checked)"></td><td><span class="tag">'+esc(a['Finance Tag'])+'</span></td><td class="mono" style="font-size:12px">'+esc(a['S/N'])+'</td><td>'+esc(a.Brand)+' '+esc(a.Model)+'</td></tr>';
+    const tag=String(a['Finance Tag']);
+    const checked=PICK_SEL.has(tag);
+    return '<tr><td><input type="checkbox" '+(checked?'checked':'')+' onchange="togglePick(\''+esc(tag)+'\',this.checked)"></td><td><span class="tag">'+esc(tag)+'</span></td><td class="mono" style="font-size:12px">'+esc(a['S/N'])+'</td><td>'+esc(a.Brand)+' '+esc(a.Model)+'</td></tr>';
   }).join(''):emptyRow(4,'ไม่พบอุปกรณ์ตรงคำค้นหา');
   updatePickBtn();
 }
 function togglePick(tag,checked){
+  tag=String(tag);
   if(checked)PICK_SEL.add(tag);else PICK_SEL.delete(tag);
   updatePickBtn();
 }
@@ -950,7 +966,7 @@ function updatePickBtn(){
 }
 function confirmPick(){
   if(!PICK_SEL.size){toast('เลือกอย่างน้อย 1 เครื่อง',1);return;}
-  PICK_SEL.forEach(tag=>{if(!TR_ITEMS.some(t=>t.tag===tag))TR_ITEMS.push({tag});});
+  PICK_SEL.forEach(tag=>{if(!TR_ITEMS.some(t=>sameTag(t.tag,tag)))TR_ITEMS.push({tag:String(tag)});});
   PICK_SEL=new Set();
   modalTransferFromPick();
 }
@@ -960,12 +976,13 @@ function modalTransferFromPick(){
 }
 function renderTrItems(){
   document.getElementById('trItems').innerHTML=TR_ITEMS.length?TR_ITEMS.map((it,i)=>{
-    const a=DB.AssetRegister.find(x=>x['Finance Tag']===it.tag);
+    const a=DB.AssetRegister.find(x=>sameTag(x['Finance Tag'],it.tag));
     const dev=a?esc(a.Brand+' '+a.Model):'<span style="color:var(--danger);font-weight:600">⚠ ไม่พบเครื่องนี้ในระบบ — กรุณาลบออก</span>';
     return '<tr'+(a?'':' style="background:var(--danger-bg)"')+'><td class="mono">'+(i+1)+'</td><td><span class="tag">'+esc(it.tag)+'</span></td><td style="font-size:12px;color:var(--text-2)">'+dev+'</td><td><button class="x" onclick="TR_ITEMS.splice('+i+',1);renderTrItems()">'+ic('trash')+'</button></td></tr>';
   }).join(''):'<tr><td colspan="4" class="empty" style="padding:20px">ยังไม่มีรายการ — กด "เลือกเครื่อง"</td></tr>';
 }
-function trDev(tag){const a=DB.AssetRegister.find(x=>x['Finance Tag']===tag);return a?esc(a.Brand+' '+a.Model):'';}
+function trDev(tag){const a=DB.AssetRegister.find(x=>sameTag(x['Finance Tag'],tag));return a?esc(a.Brand+' '+a.Model):'';}
+function sameTag(a,b){return String(a==null?'':a).trim()===String(b==null?'':b).trim();}
 async function saveTransfer(){
   const eid=val('tr_emp');if(!eid){toast('เลือกพนักงาน',1);return;}
   if(!TR_ITEMS.length){toast('เลือกอุปกรณ์อย่างน้อย 1 เครื่อง',1);return;}
@@ -975,7 +992,7 @@ async function saveTransfer(){
   const header={'Employee ID':eid,'Employee Name':e.Name,'Position':e.Position,'Department':e.Department,'Site':e.Site,'Type':type,'Created By':val('tr_by'),'Supervisor Name':val('tr_sup'),'Description':val('tr_desc'),'Transfer Date':td(),'Due Date':type==='Borrow'?(val('tr_due')||''):''};
   const items=[];
   for(const it of TR_ITEMS){
-    const a=DB.AssetRegister.find(x=>x['Finance Tag']===it.tag);
+    const a=DB.AssetRegister.find(x=>sameTag(x['Finance Tag'],it.tag));
     if(!a){toast('ไม่พบ Finance Tag "'+it.tag+'" ในระบบ — ลบรายการนี้ออกแล้วเลือกเครื่องใหม่จาก "เลือกเครื่อง"',1);return;}
     if(a.Status!=='In Stock'){toast('เครื่อง "'+it.tag+'" ไม่อยู่ในสถานะ In Stock แล้ว (ปัจจุบัน: '+a.Status+') — กรุณารีเฟรชแล้วเลือกใหม่',1);return;}
     items.push({'Finance Tag':it.tag,'Device':a['Asset Type'],'Brand':a.Brand,'Model':a.Model,'Serial Number':a['S/N']});
@@ -988,7 +1005,7 @@ async function saveTransfer(){
     DB.TransferDocument.push(Object.assign({'Document No.':docNo,'Document Date':td(),'Doc Status':'Open'},header));
     items.forEach((it,i)=>{
       DB.TransferItems.push(Object.assign({'Document No.':docNo,'No.':i+1},it));
-      const a=DB.AssetRegister.find(x=>x['Finance Tag']===it['Finance Tag']);
+      const a=DB.AssetRegister.find(x=>sameTag(x['Finance Tag'],it['Finance Tag']));
       if(a)Object.assign(a,{'Status':type==='Transfer'?'Assigned':'Borrowed','Employee ID':eid,'Owner Name':e.Name,'Department':e.Department,'Document No.':docNo});
       DB.AssetHistory.push({'Transaction ID':'TXN-'+String(DB.AssetHistory.length+1).padStart(4,'0'),'Date':td(),'Finance Tag':it['Finance Tag'],'Transaction Type':type==='Transfer'?'Transferred':'Borrowed','From':'Stock','To':e.Name,'Employee':e.Name,'Department':e.Department,'Document No.':docNo});
     });
@@ -1012,7 +1029,7 @@ async function saveReturn(docNo){
     const d=DB.TransferDocument.find(x=>x['Document No.']===docNo);
     if(d)Object.assign(d,{'Doc Status':'Returned','Return Date':p['Return Date'],'Employee Name Return':p['Employee Name Return']});
     DB.TransferItems.filter(i=>i['Document No.']===docNo).forEach(it=>{
-      const a=DB.AssetRegister.find(x=>x['Finance Tag']===it['Finance Tag']);
+      const a=DB.AssetRegister.find(x=>sameTag(x['Finance Tag'],it['Finance Tag']));
       if(a)Object.assign(a,{'Status':'In Stock','Employee ID':'','Owner Name':'','Department':'','Document No.':''});
       DB.AssetHistory.push({'Transaction ID':'TXN-'+String(DB.AssetHistory.length+1).padStart(4,'0'),'Date':td(),'Finance Tag':it['Finance Tag'],'Transaction Type':'Returned','From':p['Employee Name Return'],'To':'Stock','Document No.':docNo});
     });
@@ -1337,6 +1354,12 @@ function toast(msg,err){
   t.className='show'+(err?' err':'');
   t.innerHTML=(err?ic('x'):ic('check'))+'<span>'+esc(msg)+'</span>';
   clearTimeout(toastT);toastT=setTimeout(()=>t.className='',2600);
+}
+function doPrintDoc(){
+  const t=document.getElementById('toast');
+  if(t)t.className='';
+  clearTimeout(toastT);
+  setTimeout(()=>window.print(),50);
 }
 // ดักทุก error ที่หลุดออกมา ไม่ให้ระบบเงียบสนิทโดยผู้ใช้ไม่รู้ตัว
 window.addEventListener('error',function(ev){
