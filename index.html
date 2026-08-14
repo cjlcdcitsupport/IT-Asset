@@ -59,6 +59,10 @@
   .btn.pri:hover{background:var(--accent-ink);border-color:var(--accent-ink)}
   .btn.ghost{border-color:transparent;background:transparent;color:var(--text-2)}
   .btn.ghost:hover{background:var(--line-soft)}
+  .btn:disabled,.btn.loading{opacity:.65;cursor:not-allowed;pointer-events:none}
+  .btn .spin{width:14px;height:14px;border:2px solid rgba(255,255,255,.4);border-top-color:#fff;border-radius:50%;animation:spin .6s linear infinite;display:inline-block}
+  .btn:not(.pri) .spin{border-color:rgba(0,0,0,.2);border-top-color:var(--accent)}
+  @keyframes spin{to{transform:rotate(360deg)}}
   .field{display:flex;flex-direction:column;gap:5px}
   .field label{font-size:12px;font-weight:500;color:var(--text-2)}
   .inp,select.inp,textarea.inp{border:1px solid var(--line);border-radius:8px;padding:8px 11px;background:var(--surface);width:100%;transition:.12s;outline:none}
@@ -387,10 +391,10 @@ let DEMO=!BACKEND_URL;
 // ================= DEMO DATA =================
 function seedDemo(){
   DB.Employees=[
-    {'Employee ID':'TH061233','Name':'Mr. Jamorn Srisoontorn','Position':'Site Manager - DC Operation','Department':'WFDC Operations','Division/Branch':'WFDC_Operations Support','Site':'WFDC','Join Date':'2020-05-01','Mobile Phone No.':'081-234-5678','Email':'jamorn.sr@cj.net','CJ World ID':'jamornsr','CJ World Password':'JaSr2201','Email Password':'cj87654321','Active':'Yes'},
-    {'Employee ID':'TH061693','Name':'Mr. Noppdon Chuaikhit','Position':'Supervisor-Reach Trucks Driver','Department':'CP Biz./CDC','Division/Branch':'WFDC_Operations Support','Site':'WFDC','Join Date':'2026-07-16','Mobile Phone No.':'089-111-2222','Email':'noppdon.ch@cj.net','CJ World ID':'noppdonch','CJ World Password':'NoDo1315','Email Password':'cj12345678','Active':'Yes'},
-    {'Employee ID':'CD004512','Name':'Ms. Suda Wongsai','Position':'IT Support','Department':'CDC IT','Division/Branch':'CDC_IT Support','Site':'CDC','Join Date':'2022-01-10','Mobile Phone No.':'086-777-8888','Email':'suda.wo@cj.net','CJ World ID':'sudawo','CJ World Password':'SuWo7788','Email Password':'cj11223344','Active':'Yes'},
-    {'Employee ID':'TH061720','Name':'Mr.Nithat Wanthawee','Position':'Officer-Productivity/KPI','Department':'CP Biz./CDC','Division/Branch':'CDC_Productivity&KPI Support','Site':'CDC','Join Date':'2026-08-03','Mobile Phone No.':'','Email':'nithat.wa@cj.net','CJ World ID':'nithatwa','CJ World Password':'NiWa0326','Email Password':'cj12345678','Active':'Yes'}
+    {'Employee ID':'TH061233','Name':'Mr. Jamorn Srisoontorn','Position':'Site Manager - DC Operation','Department':'WFDC Operations','Division/Branch':'WFDC_Operations Support','Site':'WFDC','Join Date':'2020-05-01','Mobile Phone No.':'081-234-5678','Email':'jamorn.sr@cj.net','CJ World ID':'jamornsr','CJ World Password':'JaSr2201','Computer Password':'cj87654321','Active':'Yes'},
+    {'Employee ID':'TH061693','Name':'Mr. Noppdon Chuaikhit','Position':'Supervisor-Reach Trucks Driver','Department':'CP Biz./CDC','Division/Branch':'WFDC_Operations Support','Site':'WFDC','Join Date':'2026-07-16','Mobile Phone No.':'089-111-2222','Email':'noppdon.ch@cj.net','CJ World ID':'noppdonch','CJ World Password':'NoDo1315','Computer Password':'cj12345678','Active':'Yes'},
+    {'Employee ID':'CD004512','Name':'Ms. Suda Wongsai','Position':'IT Support','Department':'CDC IT','Division/Branch':'CDC_IT Support','Site':'CDC','Join Date':'2022-01-10','Mobile Phone No.':'086-777-8888','Email':'suda.wo@cj.net','CJ World ID':'sudawo','CJ World Password':'SuWo7788','Computer Password':'cj11223344','Active':'Yes'},
+    {'Employee ID':'TH061720','Name':'Mr.Nithat Wanthawee','Position':'Officer-Productivity/KPI','Department':'CP Biz./CDC','Division/Branch':'CDC_Productivity&KPI Support','Site':'CDC','Join Date':'2026-08-03','Mobile Phone No.':'','Email':'nithat.wa@cj.net','CJ World ID':'nithatwa','CJ World Password':'NiWa0326','Computer Password':'cj12345678','Active':'Yes'}
   ];
   DB.DeviceModels=[
     {'Model Name':'HP ProBook 440 G10','Device Type':'NB','Brand':'HP','Product Name':'HP Probook 440 G10','OS':'Win11Pro 25H2','Processor':'12th Gen Intel(R) Core(TM) i7-1255U @ 1.70GHz','LCD':'14" diagonal, FHD (1920 x 1080),IPS, 250 nits','Graphics':'Intel(R) Iris® Xe Graphics 1920 x 1080','Memory':'16 GB','Storage':'1 TB','Standard Cost':'31000','Standard Adaptor Price':'2118.60','Standard Mouse Price':'695.50','Standard Bag Price':'1353.55','Warranty Years':'3'},
@@ -444,9 +448,18 @@ async function apiGet(){
   if(j.success){DB=j.data;if(j.meta&&j.meta.assetTypes&&j.meta.assetTypes.length)ASSET_TYPES=j.meta.assetTypes;}
 }
 async function apiPost(action,payload){
-  if(DEMO){return {success:true,code:'DEMO',params:{}};}
+  if(DEMO){await new Promise(r=>setTimeout(r,300));return {success:true,code:'DEMO',params:{}};}
   const r=await fetch(BACKEND_URL,{method:'POST',body:JSON.stringify({action:action,payload:payload})});
   return await r.json();
+}
+// ครอบ action ให้ปุ่มที่กดหมุน+disable ระหว่างทำงาน กันกดซ้ำ
+async function btnBusy(btn,fn){
+  if(!btn||btn.classList.contains('loading'))return;
+  const html=btn.innerHTML;
+  btn.classList.add('loading');
+  btn.innerHTML='<span class="spin"></span><span>กำลังบันทึก...</span>';
+  try{await fn();}
+  finally{btn.classList.remove('loading');btn.innerHTML=html;}
 }
 
 // ================= NAV =================
@@ -603,8 +616,23 @@ function showModal(html,wide){
   document.getElementById('overlay').classList.add('open');
 }
 function closeModal(){document.getElementById('overlay').classList.remove('open');}
-document.getElementById('overlay').addEventListener('click',e=>{if(e.target.id==='overlay')closeModal();});
-function mHead(t){return '<div class="modal-h"><h3>'+t+'</h3><button class="x" onclick="closeModal()">'+ic('x')+'</button></div>';}
+// เตือนก่อนปิดถ้ามีข้อมูลกรอกค้างไว้ (กด X หรือ ยกเลิก) — คลิกพื้นหลังไม่ปิด (แบบ C)
+function modalHasInput(){
+  const m=document.getElementById('modal');
+  if(!m)return false;
+  return [...m.querySelectorAll('input,select,textarea')].some(el=>{
+    if(el.disabled||el.type==='hidden')return false;
+    if(el.tagName==='SELECT')return el.selectedIndex>0&&el.value.trim()!=='';
+    return el.value.trim()!=='';
+  });
+}
+function tryCloseModal(){
+  if(modalHasInput()&&!confirm('มีข้อมูลที่ยังไม่ได้บันทึก ต้องการปิดหน้าต่างนี้หรือไม่? ข้อมูลที่กรอกไว้จะหายไป')){return;}
+  TR_ITEMS=[];TR_FORM={};RCV_ITEMS=[];RCV_FORM={};
+  closeModal();
+}
+// คลิกพื้นหลังนอก modal — ไม่ปิด (กันเผลอกดแล้วข้อมูลหาย)
+function mHead(t){return '<div class="modal-h"><h3>'+t+'</h3><button class="x" onclick="tryCloseModal()">'+ic('x')+'</button></div>';}
 function f(label,id,attrs){return '<div class="field"><label>'+label+'</label><input class="inp" id="'+id+'" '+(attrs||'')+'></div>';}
 function sel(label,id,opts,cur){return '<div class="field"><label>'+label+'</label><select class="inp" id="'+id+'">'+opts.map(o=>'<option'+(o===cur?' selected':'')+'>'+o+'</option>').join('')+'</select></div>';}
 
@@ -627,12 +655,12 @@ function modalEmployee(id){
     f('E-mail','e_email','value="'+esc(e.Email||'')+'"')+
     f('CJ World ID','e_cjid','value="'+esc(e['CJ World ID']||'')+'"')+
     f('CJ World Password','e_cjpw','value="'+esc(e['CJ World Password']||'')+'"')+
-    f('Email Password','e_emailpw','value="'+esc(e['Email Password']||'')+'"')+
+    f('Computer Password','e_comppw','value="'+esc(e['Computer Password']||'')+'"')+
     '</div></div>'+
-    '<div class="modal-f"><button class="btn ghost" onclick="closeModal()">ยกเลิก</button><button class="btn pri" onclick="saveEmployee(\''+(id||'')+'\')">บันทึก</button></div>',true);
+    '<div class="modal-f"><button class="btn ghost" onclick="tryCloseModal()">ยกเลิก</button><button class="btn pri" onclick="btnBusy(this,()=>saveEmployee(\''+(id||'')+'\'))">บันทึก</button></div>',true);
 }
 async function saveEmployee(id){
-  const p={'Employee ID':id||val('e_id'),'Name':val('e_name'),'Position':val('e_pos'),'Department':val('e_dept'),'Division/Branch':val('e_div'),'Site':val('e_site'),'Join Date':val('e_join'),'Mobile Phone No.':val('e_phone'),'Email':val('e_email'),'CJ World ID':val('e_cjid'),'CJ World Password':val('e_cjpw'),'Email Password':val('e_emailpw'),'Active':val('e_active')};
+  const p={'Employee ID':id||val('e_id'),'Name':val('e_name'),'Position':val('e_pos'),'Department':val('e_dept'),'Division/Branch':val('e_div'),'Site':val('e_site'),'Join Date':val('e_join'),'Mobile Phone No.':val('e_phone'),'Email':val('e_email'),'CJ World ID':val('e_cjid'),'CJ World Password':val('e_cjpw'),'Computer Password':val('e_comppw'),'Active':val('e_active')};
   if(!p['Employee ID']||!p.Name){toast('กรอก Employee ID และชื่อ',1);return;}
   if(id&&p.Active==='No'){
     const held=DB.AssetRegister.filter(a=>a['Employee ID']===id&&(a.Status==='Assigned'||a.Status==='Borrowed'));
@@ -664,7 +692,7 @@ function modalModel(name){
     f('ราคา Mouse','m_mou','type="number" value="'+esc(m['Standard Mouse Price']||'')+'"')+
     f('ราคา Bag','m_bag','type="number" value="'+esc(m['Standard Bag Price']||'')+'"')+
     '</div></div>'+
-    '<div class="modal-f"><button class="btn ghost" onclick="closeModal()">ยกเลิก</button><button class="btn pri" onclick="saveModel(\''+(name||'')+'\')">บันทึก</button></div>');
+    '<div class="modal-f"><button class="btn ghost" onclick="tryCloseModal()">ยกเลิก</button><button class="btn pri" onclick="btnBusy(this,()=>saveModel(\''+(name||'')+'\'))">บันทึก</button></div>');
 }
 async function saveModel(name){
   const p={'Model Name':name||val('m_name'),'Device Type':val('m_type'),'Brand':val('m_brand'),'Product Name':val('m_prod'),'OS':val('m_os'),'Processor':val('m_cpu'),'LCD':val('m_lcd'),'Graphics':val('m_gpu'),'Memory':val('m_mem'),'Storage':val('m_sto'),'Standard Cost':val('m_cost'),'Standard Adaptor Price':val('m_adp'),'Standard Mouse Price':val('m_mou'),'Standard Bag Price':val('m_bag'),'Warranty Years':val('m_war')};
@@ -682,7 +710,7 @@ function modalPO(){
     f('Qty','po_qty','type="number"')+f('Unit Price','po_price','type="number"')+
     f('Expected Date','po_exp','type="date"')+
     '</div></div>'+
-    '<div class="modal-f"><button class="btn ghost" onclick="closeModal()">ยกเลิก</button><button class="btn pri" onclick="savePO()">สร้าง</button></div>');
+    '<div class="modal-f"><button class="btn ghost" onclick="tryCloseModal()">ยกเลิก</button><button class="btn pri" onclick="btnBusy(this,()=>savePO())">สร้าง</button></div>');
 }
 async function savePO(){
   const qty=num(val('po_qty')),price=num(val('po_price'));
@@ -723,7 +751,7 @@ function modalReceiving(){
     '</div>'+
     '<div class="tbl-wrap" style="box-shadow:none;max-height:320px;overflow-y:auto"><table><thead><tr><th style="width:40px">#</th><th>Finance Tag</th><th>S/N</th><th style="width:36px"></th></tr></thead><tbody id="rcvItems"></tbody></table></div>'+
     '</div>'+
-    '<div class="modal-f"><button class="btn ghost" onclick="RCV_ITEMS=[];RCV_FORM={};closeModal()">ยกเลิก</button><button class="btn pri" onclick="saveReceivingBatch()">รับเข้าทั้งหมด</button></div>',true);
+    '<div class="modal-f"><button class="btn ghost" onclick="tryCloseModal()">ยกเลิก</button><button class="btn pri" onclick="btnBusy(this,()=>saveReceivingBatch())">รับเข้าทั้งหมด</button></div>',true);
   renderRcvItems();
 }
 function saveRcvFormState(){
@@ -851,7 +879,7 @@ function modalEditAsset(tag){
     f('Service/Exp Date','ea_exp','type="date" value="'+esc(a['Service/Expiration Date']||'')+'"')+
     f('Remark','ea_remark','value="'+esc(a.Remark||'')+'"')+
     '</div></div>'+
-    '<div class="modal-f"><button class="btn ghost" onclick="closeModal()">ยกเลิก</button><button class="btn pri" onclick="saveEditAsset(\''+esc(tag)+'\')">บันทึก</button></div>');
+    '<div class="modal-f"><button class="btn ghost" onclick="tryCloseModal()">ยกเลิก</button><button class="btn pri" onclick="btnBusy(this,()=>saveEditAsset(\''+esc(tag)+'\'))">บันทึก</button></div>');
 }
 function fillEaModelBrand(){
   const m=DB.DeviceModels.find(x=>x['Model Name']===val('ea_model'));
@@ -881,7 +909,7 @@ function modalTransfer(){
     '<div style="margin:18px 0 8px;display:flex;justify-content:space-between;align-items:center"><label style="font-size:12px;font-weight:600;color:var(--text-2)">รายการอุปกรณ์ ('+TR_ITEMS.length+' เครื่อง)</label><button class="btn" style="padding:5px 11px" onclick="saveTrFormState();modalPickAssets()">'+ic('plus')+'เลือกเครื่อง</button></div>'+
     '<div class="tbl-wrap" style="box-shadow:none"><table><thead><tr><th style="width:40px">#</th><th>Finance Tag</th><th>Device</th><th></th></tr></thead><tbody id="trItems"></tbody></table></div>'+
     '</div>'+
-    '<div class="modal-f"><button class="btn ghost" onclick="TR_ITEMS=[];TR_FORM={};closeModal()">ยกเลิก</button><button class="btn pri" onclick="saveTransfer()">สร้างเอกสาร</button></div>',true);
+    '<div class="modal-f"><button class="btn ghost" onclick="TR_ITEMS=[];TR_FORM={};closeModal()">ยกเลิก</button><button class="btn pri" onclick="btnBusy(this,()=>saveTransfer())">สร้างเอกสาร</button></div>',true);
   renderTrItems();
   if(f0.emp)fillEmp();
 }
@@ -975,7 +1003,7 @@ function modalReturn(docNo){
     f('ผู้คืน (Employee Name Return)','rt_name','')+
     f('วันที่คืน','rt_date','type="date" value="'+td()+'"')+
     '</div></div>'+
-    '<div class="modal-f"><button class="btn ghost" onclick="closeModal()">ยกเลิก</button><button class="btn pri" onclick="saveReturn(\''+esc(docNo)+'\')">ยืนยันรับคืน</button></div>');
+    '<div class="modal-f"><button class="btn ghost" onclick="tryCloseModal()">ยกเลิก</button><button class="btn pri" onclick="btnBusy(this,()=>saveReturn(\''+esc(docNo)+'\'))">ยืนยันรับคืน</button></div>');
 }
 async function saveReturn(docNo){
   const p={'Document No.':docNo,'Employee Name Return':val('rt_name'),'Return Date':val('rt_date')};
@@ -1259,7 +1287,7 @@ function specPage(e,asset,model,lang,pageLabel){
     '<div class="r"><b>User / CJ ID</b><span>'+esc(e['CJ World ID']||'')+'</span></div>'+
     '<div class="r"><b>Password</b><span class="mono">'+esc(e['CJ World Password']||'')+'</span></div>'+
     '<div class="r"><b>Email</b><span>'+esc(e.Email||'')+'</span></div>'+
-    '<div class="r"><b>Email Password</b><span class="mono">'+esc(e['Email Password']||'')+'</span></div>'+
+    '<div class="r"><b>Computer Password</b><span class="mono">'+esc(e['Computer Password']||'')+'</span></div>'+
   '</div>'+
   '<div class="sign-row" style="margin-top:30px">'+
     '<div class="sign" style="text-align:left"><div class="line" style="max-width:280px"></div><p>Employee Acknowledge &amp; Receive: ____________  Date: ____________</p></div>'+
@@ -1289,7 +1317,7 @@ function openSettings(){
     '<div class="field"><label>Google Apps Script Web App URL</label><input class="inp" id="set_url" placeholder="https://script.google.com/macros/s/.../exec" value="'+esc(BACKEND_URL)+'"></div>'+
     '<p style="font-size:12px;color:var(--text-2);margin:12px 0 0">เว้นว่างไว้ = ใช้ <b>Demo mode</b> (ข้อมูลตัวอย่างในเครื่อง ไม่บันทึกจริง)<br>ใส่ URL หลัง deploy GAS แล้ว = เชื่อมข้อมูลจริงจาก Google Sheets</p>'+
     '</div>'+
-    '<div class="modal-f"><button class="btn ghost" onclick="closeModal()">ยกเลิก</button><button class="btn pri" onclick="saveSettings()">บันทึกและโหลดใหม่</button></div>');
+    '<div class="modal-f"><button class="btn ghost" onclick="closeModal()">ยกเลิก</button><button class="btn pri" onclick="btnBusy(this,()=>saveSettings())">บันทึกและโหลดใหม่</button></div>');
 }
 function saveSettings(){
   const u=val('set_url').trim();
