@@ -322,9 +322,9 @@
 
       <!-- Return -->
       <section class="page" id="page-return">
-        <p style="color:var(--text-2);margin:0 0 16px;font-size:13px">เอกสาร Borrow ที่ยังไม่คืน — กด "รับคืน" เพื่อคืนอุปกรณ์ทั้งหมดในเอกสารกลับสถานะ In Stock</p>
+        <p style="color:var(--text-2);margin:0 0 16px;font-size:13px">เอกสาร Transfer/Borrow ที่ยังไม่คืน — กด "รับคืน" เพื่อเลือกเงื่อนไขและคืนอุปกรณ์ทั้งหมดในเอกสาร</p>
         <div class="tbl-wrap"><table>
-          <thead><tr><th>Document No.</th><th>Date</th><th>Employee</th><th>Due Date</th><th>Items</th><th>Status</th><th></th></tr></thead>
+          <thead><tr><th>Document No.</th><th>Date</th><th>Type</th><th>Employee</th><th>Due Date</th><th>Items</th><th>Status</th><th></th></tr></thead>
           <tbody id="tblReturn"></tbody>
         </table></div>
       </section>
@@ -613,13 +613,14 @@ function renderTransfer(){
   }).join(''):emptyRow(8);
 }
 function renderReturn(){
-  const open=DB.TransferDocument.filter(d=>d.Type==='Borrow'&&d['Doc Status']!=='Returned');
+  const open=DB.TransferDocument.filter(d=>d['Doc Status']!=='Returned');
   document.getElementById('tblReturn').innerHTML=open.length?open.map(d=>{
     const items=DB.TransferItems.filter(i=>i['Document No.']===d['Document No.']).length;
     const overdue=isOverdue(d);
     const dueTxt=d['Due Date']?esc(d['Due Date'])+(overdue?' <span style="color:var(--danger);font-weight:600">(เกินกำหนด)</span>':''):'<span style="color:var(--text-3)">—</span>';
-    return '<tr'+(overdue?' style="background:var(--danger-bg)"':'')+'><td class="mono">'+esc(d['Document No.'])+'</td><td>'+esc(d['Document Date'])+'</td><td>'+esc(d['Employee Name'])+'</td><td>'+dueTxt+'</td><td class="mono">'+items+'</td><td>'+pill('Borrowed')+'</td><td><button class="btn pri" style="padding:5px 12px" onclick="modalReturn(\''+esc(d['Document No.'])+'\')">'+ic('undo')+'รับคืน</button></td></tr>';
-  }).join(''):emptyRow(7,'ไม่มีเอกสารยืมที่ค้างคืน');
+    const tc=d.Type==='Transfer'?'type-t':'type-b';
+    return '<tr'+(overdue?' style="background:var(--danger-bg)"':'')+'><td class="mono">'+esc(d['Document No.'])+'</td><td>'+esc(d['Document Date'])+'</td><td><span class="badge '+tc+'">'+esc(d.Type)+'</span></td><td>'+esc(d['Employee Name'])+'</td><td>'+dueTxt+'</td><td class="mono">'+items+'</td><td>'+pill(d.Type==='Transfer'?'Assigned':'Borrowed')+'</td><td><button class="btn pri" style="padding:5px 12px" onclick="modalReturn(\''+esc(d['Document No.'])+'\')">'+ic('undo')+'รับคืน</button></td></tr>';
+  }).join(''):emptyRow(8,'ไม่มีเอกสารค้างคืน');
 }
 function renderHistory(){
   const q=val('hSearch').toLowerCase();
@@ -1167,27 +1168,56 @@ async function saveTransfer(){
   TR_ITEMS=[];TR_FORM={};
 }
 
+const RETURN_REASONS=[
+  {v:'normal',label:'คืนปกติ (พร้อมใช้งานต่อ)',status:'In Stock'},
+  {v:'repair',label:'ชำรุด / ส่งซ่อม',status:'Repair'},
+  {v:'resign',label:'ลาออก / สิ้นสุดการจ้างงาน',status:'In Stock'},
+  {v:'dispose',label:'ตัดจำหน่าย (ใช้งานไม่ได้แล้ว)',status:'Disposed'}
+];
 function modalReturn(docNo){
   showModal(mHead('รับคืนอุปกรณ์ · '+docNo)+
     '<div class="modal-b"><div class="grid2">'+
     f('ผู้คืน (Employee Name Return)','rt_name','')+
     f('วันที่คืน','rt_date','type="date" value="'+td()+'"')+
-    '</div></div>'+
+    '</div>'+
+    '<div style="margin-top:12px"><div class="field"><label>เงื่อนไขการคืน</label><select class="inp" id="rt_reason">'+RETURN_REASONS.map(r=>'<option value="'+r.v+'">'+r.label+'</option>').join('')+'</select></div></div>'+
+    '</div>'+
     '<div class="modal-f"><button class="btn ghost" onclick="tryCloseModal()">ยกเลิก</button><button class="btn pri" onclick="btnBusy(this,()=>saveReturn(\''+esc(docNo)+'\'))">ยืนยันรับคืน</button></div>');
 }
 async function saveReturn(docNo){
-  const p={'Document No.':docNo,'Employee Name Return':val('rt_name'),'Return Date':val('rt_date')};
+  const reasonObj=RETURN_REASONS.find(r=>r.v===val('rt_reason'))||RETURN_REASONS[0];
+  const doc=DB.TransferDocument.find(x=>x['Document No.']===docNo);
+  const eid=doc?doc['Employee ID']:'';
+  const ename=val('rt_name')||(doc?doc['Employee Name']:'');
+  const p={'Document No.':docNo,'Employee Name Return':ename,'Return Date':val('rt_date'),'TargetStatus':reasonObj.status,'ReturnReason':reasonObj.label};
   const r=await apiPost('markReturned',p);
   if(DEMO){
     const d=DB.TransferDocument.find(x=>x['Document No.']===docNo);
     if(d)Object.assign(d,{'Doc Status':'Returned','Return Date':p['Return Date'],'Employee Name Return':p['Employee Name Return']});
     DB.TransferItems.filter(i=>i['Document No.']===docNo).forEach(it=>{
       const a=DB.AssetRegister.find(x=>sameTag(x['Finance Tag'],it['Finance Tag']));
-      if(a)Object.assign(a,{'Status':'In Stock','Employee ID':'','Owner Name':'','Department':'','Document No.':''});
-      DB.AssetHistory.push({'Transaction ID':'TXN-'+String(DB.AssetHistory.length+1).padStart(4,'0'),'Date':td(),'Finance Tag':it['Finance Tag'],'Transaction Type':'Returned','From':p['Employee Name Return'],'To':'Stock','Document No.':docNo});
+      if(a)Object.assign(a,{'Status':reasonObj.status,'Employee ID':'','Owner Name':'','Department':'','Document No.':'','Remark':reasonObj.label});
+      DB.AssetHistory.push({'Transaction ID':'TXN-'+String(DB.AssetHistory.length+1).padStart(4,'0'),'Date':td(),'Finance Tag':it['Finance Tag'],'Transaction Type':'Returned','From':p['Employee Name Return'],'To':reasonObj.status,'Remark':reasonObj.label,'Document No.':docNo});
     });
   }
   finishSave(r,'รับคืนเรียบร้อย');
+  if(reasonObj.v==='resign'&&eid)checkOffboard(eid,ename);
+}
+function checkOffboard(eid,ename){
+  const holding=DB.AssetRegister.filter(a=>a['Employee ID']===eid&&(a.Status==='Assigned'||a.Status==='Borrowed'));
+  if(holding.length)return;
+  const emp=DB.Employees.find(x=>x['Employee ID']===eid);
+  if(!emp||emp.Active==='No')return;
+  showModal(mHead('พนักงานคืนอุปกรณ์ครบแล้ว')+
+    '<div class="modal-b"><p style="font-size:13.5px;color:var(--text-2)">'+esc(ename||emp.Name)+' ('+esc(eid)+') ไม่มีทรัพย์สินถือครองแล้ว — ต้องการปิดการใช้งาน (Deactivate) พนักงานคนนี้เลยหรือไม่?</p></div>'+
+    '<div class="modal-f"><button class="btn ghost" onclick="closeModal()">ไม่ ปิดทีหลัง</button><button class="btn pri" style="background:var(--danger);border-color:var(--danger)" onclick="btnBusy(this,()=>doOffboard(\''+esc(eid)+'\'))">ปิดการใช้งานเลย</button></div>');
+}
+async function doOffboard(eid){
+  const emp=DB.Employees.find(x=>x['Employee ID']===eid);if(!emp)return;
+  const p=Object.assign({},emp,{'Active':'No'});
+  const r=await apiPost('updateEmployee',p);
+  if(DEMO)emp.Active='No';
+  finishSave(r,'ปิดการใช้งานพนักงานแล้ว');
 }
 
 function finishSave(r,okMsg){
