@@ -220,6 +220,7 @@
     .panels{grid-template-columns:1fr}
   }
 </style>
+<script src="https://cdn.jsdelivr.net/npm/exceljs@4.4.0/dist/exceljs.min.js"></script>
 </head>
 <body>
 <div class="side-backdrop" id="sideBackdrop" onclick="toggleSide()"></div>
@@ -241,10 +242,12 @@
       <a data-page="transfer"><i data-ic="swap"></i>Transfer / Borrow</a>
       <a data-page="return"><i data-ic="undo"></i>Return</a>
       <a data-page="history"><i data-ic="clock"></i>History</a>
+      <a data-page="count"><i data-ic="clipboard"></i>ตรวจนับสต๊อก</a>
       <div class="grp">Master · Print</div>
       <a data-page="employees"><i data-ic="users"></i>Employees</a>
       <a data-page="models"><i data-ic="cpu"></i>Device Models</a>
       <a data-page="print"><i data-ic="printer"></i>Print Center</a>
+      <a data-page="export"><i data-ic="download"></i>Export Data</a>
     </nav>
     <div class="side-foot">
       <div class="conn"><span class="dot" id="connDot"></span><span id="connTxt">Demo mode</span></div>
@@ -373,6 +376,46 @@
         </div>
         <div id="printArea"><div class="empty">เลือกเทมเพลตและเอกสารเพื่อแสดงตัวอย่างก่อนปริ๊น</div></div>
       </section>
+
+      <!-- Physical Count -->
+      <section class="page" id="page-count">
+        <div class="toolbar no-print">
+          <button class="btn pri" onclick="modalStartCount()"><i data-ic="clipboard"></i>เริ่มนับรอบใหม่</button>
+        </div>
+        <div class="tbl-wrap"><table>
+          <thead><tr><th>Session</th><th>วันที่</th><th>Site</th><th>Location</th><th>ประเภท</th><th>ผู้ตรวจนับ</th><th>พบ/ทั้งหมด</th><th>สถานะ</th><th></th></tr></thead>
+          <tbody id="tblCount"></tbody>
+        </table></div>
+      </section>
+
+      <!-- Export Data -->
+      <section class="page" id="page-export">
+        <div class="card" style="max-width:720px">
+          <div class="card-h"><h3>เลือกข้อมูลที่ต้องการส่งออก</h3></div>
+          <div style="padding:18px 20px">
+            <div style="font-size:12px;font-weight:600;color:var(--text-2);margin-bottom:8px">ชุดข้อมูล (ติ๊กได้หลายอัน — แต่ละอันเป็น 1 แท็บในไฟล์)</div>
+            <div id="expDatasets" style="display:grid;grid-template-columns:1fr 1fr;gap:8px 18px;margin-bottom:20px"></div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:18px">
+              <div>
+                <div style="font-size:12px;font-weight:600;color:var(--text-2);margin-bottom:8px">กรอง Site</div>
+                <div id="expSites"></div>
+              </div>
+              <div>
+                <div style="font-size:12px;font-weight:600;color:var(--text-2);margin-bottom:8px">สถานะพนักงาน</div>
+                <select class="inp" id="expEmpStatus">
+                  <option value="all">ทั้งหมด</option>
+                  <option value="active">เฉพาะ Active</option>
+                  <option value="inactive">เฉพาะลาออก (Inactive)</option>
+                </select>
+              </div>
+            </div>
+            <div style="margin-top:24px;display:flex;gap:10px;align-items:center">
+              <button class="btn pri" onclick="btnBusy(this,()=>doExport())"><i data-ic="download"></i>Export เป็น Excel (.xlsx)</button>
+              <span style="font-size:11.5px;color:var(--text-3)">Receiving / History จะมีคอลัมน์ผู้ครอบครองปัจจุบันเพิ่มให้</span>
+            </div>
+          </div>
+        </div>
+      </section>
     </div>
   </div>
 </div>
@@ -386,6 +429,8 @@
 function ic(n){
   const p={
     menu:'<line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/>',
+    clipboard:'<path d="M9 2h6a1 1 0 0 1 1 1v2H8V3a1 1 0 0 1 1-1z"/><path d="M8 4H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2h-2"/>',
+    download:'<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>',
     grid:'<rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/>',
     box:'<path d="M21 8 12 3 3 8v8l9 5 9-5V8Z"/><path d="M3 8l9 5 9-5"/><path d="M12 13v8"/>',
     cart:'<circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.7 13.4a2 2 0 0 0 2 1.6h9.7a2 2 0 0 0 2-1.6L23 6H6"/>',
@@ -414,7 +459,7 @@ let ASSET_TYPES=['NB Laptop','PC Desktop','Monitor','Printer','Scanner','UPS','N
 const STAT_LIST=['In Stock','Borrowed','Assigned','Repair','Disposed','Lost'];
 const STAT_CLASS={'In Stock':'instock','Borrowed':'borrowed','Assigned':'assigned','Repair':'repair','Disposed':'disposed','Lost':'lost'};
 const STAT_BAR={'In Stock':'#1a7f52','Borrowed':'#a15c00','Assigned':'#1f4fa8','Repair':'#9a4a00','Disposed':'#b3261e','Lost':'#5b6780'};
-let DB={Employees:[],DeviceModels:[],AssetRegister:[],PurchaseOrder:[],Receiving:[],TransferDocument:[],TransferItems:[],AssetHistory:[]};
+let DB={Employees:[],DeviceModels:[],AssetRegister:[],PurchaseOrder:[],Receiving:[],TransferDocument:[],TransferItems:[],AssetHistory:[],PhysicalCount:[],PhysicalCountItems:[]};
 let BACKEND_URL=localStorage.getItem('it_asset_url')||'https://script.google.com/macros/s/AKfycbwQP3L4skhjlTV1ZdYcvhu0nfMbhNLsmQTmTKcHCnOhTIdxrbTepo_qusUg8N-6fzXE/exec';
 let DEMO=!BACKEND_URL;
 
@@ -476,7 +521,10 @@ async function apiGet(){
   if(DEMO){seedDemo();return;}
   const r=await fetch(BACKEND_URL);
   const j=await r.json();
-  if(j.success){DB=j.data;if(j.meta&&j.meta.assetTypes&&j.meta.assetTypes.length)ASSET_TYPES=j.meta.assetTypes;}
+  if(j.success){
+    DB=Object.assign({Employees:[],DeviceModels:[],AssetRegister:[],PurchaseOrder:[],Receiving:[],TransferDocument:[],TransferItems:[],AssetHistory:[],PhysicalCount:[],PhysicalCountItems:[]},j.data);
+    if(j.meta&&j.meta.assetTypes&&j.meta.assetTypes.length)ASSET_TYPES=j.meta.assetTypes;
+  }
 }
 async function apiPost(action,payload){
   if(DEMO){await new Promise(r=>setTimeout(r,300));return {success:true,code:'DEMO',params:{}};}
@@ -504,7 +552,9 @@ const PAGE_META={
   history:['History','ประวัติการเคลื่อนไหวของทรัพย์สิน'],
   employees:['Employees','ฐานข้อมูลพนักงาน'],
   models:['Device Models','รุ่นอุปกรณ์มาตรฐาน PC / NB'],
-  print:['Print Center','พิมพ์เอกสารทางการ']
+  print:['Print Center','พิมพ์เอกสารทางการ'],
+  count:['ตรวจนับสต๊อก','Physical Count · ตรวจนับทรัพย์สินตามจริง'],
+  export:['Export Data','ส่งออกข้อมูลเป็นไฟล์ Excel']
 };
 const PAGE_ACTIONS={
   po:'<button class="btn pri" onclick="modalPO()">'+ic('plus')+'สร้าง PO</button>',
@@ -539,6 +589,7 @@ function renderAll(){
   fillSelect('fStatus',STAT_LIST,'ทุกสถานะ');
   renderDashboard();renderRegister();renderPO();renderReceiving();
   renderTransfer();renderReturn();renderHistory();renderEmployees();renderModels();
+  renderCount();renderExport();
 }
 function fillSelect(id,arr,ph){
   const s=document.getElementById(id);if(!s)return;
@@ -1357,7 +1408,10 @@ function renderReceiptPrint(eid){
   '<div class="sec-h">1. รายการรับทรัพย์สิน</div>'+
   '<div style="border:1px solid #b7bfcf;border-top:none;padding:10px 14px 4px">'+section('1',true)+'</div>'+
   '<div class="split2" style="margin-top:26px">'+sigTH('ผู้รับทรัพย์สิน')+sigTH('พยาน / ผู้จัดการแผนก (Manager/HOD)')+'</div>'+
-  '<div class="sec-h" style="margin-top:30px">2. รายการคืนทรัพย์สิน</div>'+
+  '</div>'+
+  '<div class="doc-wrap page-break">'+
+  '<div style="margin-bottom:10px"><img src="'+CJ_LOGO+'" alt="CJ Logistics" style="height:30px;width:auto"></div>'+
+  '<div class="sec-h" style="margin-top:6px">2. รายการคืนทรัพย์สิน</div>'+
   '<p style="font-size:11.5px;color:var(--text-2);margin:10px 0 0">โดยมีสถานะความเป็นพนักงานวันสุดท้ายในวันที่ '+blankLn(120)+' &nbsp; ปฏิบัติงานวันสุดท้ายในวันที่ '+blankLn(120)+'</p>'+
   '<div style="border:1px solid #b7bfcf;border-top:none;padding:10px 14px 4px;margin-top:8px">'+section('2',false)+'</div>'+
   '<div class="sec-h" style="margin-top:30px">3. ลงนามผู้รับคืนทรัพย์สิน</div>'+
@@ -1552,6 +1606,261 @@ window.addEventListener('error',function(ev){
 window.addEventListener('unhandledrejection',function(ev){
   toast('เกิดข้อผิดพลาด: '+((ev.reason&&ev.reason.message)||ev.reason||'ไม่ทราบสาเหตุ'),1);
 });
+
+// ================= EXPORT DATA =================
+const EXPORT_SETS=[
+  {key:'AssetRegister',label:'Asset Register',hasSite:true},
+  {key:'PurchaseOrder',label:'Purchase Order',hasSite:false},
+  {key:'Receiving',label:'Receiving',hasSite:'join'},
+  {key:'TransferDocument',label:'Transfer / Borrow',hasSite:true},
+  {key:'AssetHistory',label:'History',hasSite:'join'},
+  {key:'Employees',label:'Employees',hasSite:true},
+  {key:'DeviceModels',label:'Device Models',hasSite:false}
+];
+function renderExport(){
+  document.getElementById('expDatasets').innerHTML=EXPORT_SETS.map(s=>
+    '<label style="display:flex;align-items:center;gap:8px;font-size:13px;cursor:pointer"><input type="checkbox" class="exp-set" value="'+s.key+'" checked> '+s.label+'</label>'
+  ).join('');
+  document.getElementById('expSites').innerHTML=SITES.map(s=>
+    '<label style="display:inline-flex;align-items:center;gap:6px;font-size:13px;cursor:pointer;margin-right:14px"><input type="checkbox" class="exp-site" value="'+s+'" checked> '+s+'</label>'
+  ).join('');
+}
+function assetByTag(tag){return DB.AssetRegister.find(a=>sameTag(a['Finance Tag'],tag));}
+function doExport(){
+  if(typeof ExcelJS==='undefined'){toast('โหลด ExcelJS ไม่สำเร็จ ตรวจอินเทอร์เน็ต',1);return Promise.resolve();}
+  const sets=[...document.querySelectorAll('.exp-set:checked')].map(c=>c.value);
+  if(!sets.length){toast('เลือกอย่างน้อย 1 ชุดข้อมูล',1);return Promise.resolve();}
+  const sites=[...document.querySelectorAll('.exp-site:checked')].map(c=>c.value);
+  const empStatus=val('expEmpStatus');
+  const wb=new ExcelJS.Workbook();
+  wb.creator='IT Asset Management';wb.created=new Date();
+
+  sets.forEach(key=>{
+    const meta=EXPORT_SETS.find(s=>s.key===key);
+    let rows=(DB[key]||[]).slice();
+    // กรอง Site
+    if(meta.hasSite===true){
+      rows=rows.filter(r=>!r.Site||sites.includes(r.Site));
+    }else if(meta.hasSite==='join'){
+      rows=rows.filter(r=>{const a=assetByTag(r['Finance Tag']);return !a||!a.Site||sites.includes(a.Site);});
+    }
+    // กรองสถานะพนักงาน
+    if(key==='Employees'&&empStatus!=='all'){
+      rows=rows.filter(r=>empStatus==='active'?String(r.Active)!=='No':String(r.Active)==='No');
+    }
+    // join คอลัมน์ผู้ครอบครองปัจจุบัน
+    if(meta.hasSite==='join'){
+      rows=rows.map(r=>{const a=assetByTag(r['Finance Tag']);return Object.assign({},r,{
+        'ผู้ครอบครองปัจจุบัน':a?(a['Owner Name']||''):'',
+        'สถานะปัจจุบัน':a?(a.Status||''):'(ไม่พบในทะเบียน)',
+        'Site ปัจจุบัน':a?(a.Site||''):''
+      });});
+    }
+    const cols=rows.length?Object.keys(rows[0]):['(ไม่มีข้อมูล)'];
+    const ws=wb.addWorksheet(meta.label.substring(0,31));
+    ws.columns=cols.map(c=>({header:c,key:c,width:Math.min(Math.max(c.length+4,12),40)}));
+    rows.forEach(r=>ws.addRow(r));
+    // สไตล์หัวตาราง
+    const hr=ws.getRow(1);
+    hr.eachCell(c=>{
+      c.fill={type:'pattern',pattern:'solid',fgColor:{argb:'FF1E293B'}};
+      c.font={bold:true,color:{argb:'FFFFFFFF'},size:11};
+      c.alignment={vertical:'middle',horizontal:'left'};
+      c.border={bottom:{style:'thin',color:{argb:'FF334155'}}};
+    });
+    hr.height=20;
+    ws.views=[{state:'frozen',ySplit:1}];
+    // เส้นบางๆ ทุกเซลล์ข้อมูล
+    for(let i=2;i<=rows.length+1;i++){
+      ws.getRow(i).eachCell(c=>{c.border={bottom:{style:'hair',color:{argb:'FFE2E8F0'}}};c.font={size:10.5};});
+    }
+  });
+
+  return wb.xlsx.writeBuffer().then(buf=>{
+    const blob=new Blob([buf],{type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'});
+    const url=URL.createObjectURL(blob);
+    const a=document.createElement('a');
+    a.href=url;a.download='IT-Asset-Export-'+td()+'.xlsx';
+    document.body.appendChild(a);a.click();document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    toast('ส่งออกไฟล์ Excel แล้ว');
+  }).catch(e=>{toast('ส่งออกไม่สำเร็จ: '+e.message,1);});
+}
+
+// ================= PHYSICAL COUNT =================
+let CNT_ITEMS=[];let CNT_SESSION=null;
+function renderCount(){
+  const sessions=(DB.PhysicalCount||[]).slice().reverse();
+  document.getElementById('tblCount').innerHTML=sessions.length?sessions.map(s=>{
+    const openBtn=s.Status==='Open'
+      ?'<button class="btn pri" style="padding:5px 11px" onclick="openCountSession(\''+esc(s['Session ID'])+'\')">นับต่อ</button>'
+      :'<button class="btn" style="padding:5px 11px" onclick="viewCountReport(\''+esc(s['Session ID'])+'\')">ดูผล</button>';
+    const miss=Number(s['Total Missing']||0);
+    const recheckBtn=(s.Status==='Closed'&&s['Session Type']==='Full'&&miss>0&&!hasRecheck(s['Session ID']))
+      ?' <button class="btn" style="padding:5px 11px;color:var(--warn)" onclick="startRecheck(\''+esc(s['Session ID'])+'\')">เปิด Recheck ('+miss+')</button>':'';
+    const typeBadge=s['Session Type']==='Recheck'?'<span class="badge" style="background:#fef3c7;color:#92400e">Recheck</span>':'<span class="badge type-t">Full</span>';
+    return '<tr><td class="mono">'+esc(s['Session ID'])+'</td><td>'+esc(s['Session Date'])+'</td><td>'+esc(s.Site)+'</td><td>'+esc(s['Work Location']||'—')+'</td><td>'+typeBadge+'</td><td>'+esc(s['Counted By']||'—')+'</td><td class="mono">'+esc(s['Total Found']||0)+'/'+esc(s['Total Expected']||0)+'</td><td>'+(s.Status==='Open'?'<span class="badge" style="background:#dbeafe;color:#1e40af">Open</span>':'<span class="badge" style="background:#dcfce7;color:#166534">Closed</span>')+'</td><td>'+openBtn+recheckBtn+'</td></tr>';
+  }).join(''):emptyRow(9,'ยังไม่มีการตรวจนับ — กด "เริ่มนับรอบใหม่"');
+}
+function hasRecheck(parentId){return (DB.PhysicalCount||[]).some(s=>s['Parent Session']===parentId);}
+function modalStartCount(){
+  const locs=[...new Set(DB.AssetRegister.map(a=>a['Work Location']).filter(Boolean))].sort();
+  showModal(mHead('เริ่มตรวจนับรอบใหม่')+
+    '<div class="modal-b"><div class="grid2">'+
+    sel('Site','sc_site',SITES,SITES[0])+
+    '<div class="field"><label>Work Location (เว้นว่าง = ทั้ง Site)</label><select class="inp" id="sc_loc"><option value="">— ทั้ง Site —</option>'+locs.map(l=>'<option value="'+esc(l)+'">'+esc(l)+'</option>').join('')+'</select></div>'+
+    f('ผู้ตรวจนับ','sc_by','')+
+    '</div></div>'+
+    '<div class="modal-f"><button class="btn ghost" onclick="tryCloseModal()">ยกเลิก</button><button class="btn pri" onclick="btnBusy(this,()=>doStartCount())">เริ่มนับ</button></div>');
+}
+async function doStartCount(){
+  const site=val('sc_site'),loc=val('sc_loc'),by=val('sc_by');
+  if(!by){toast('กรอกชื่อผู้ตรวจนับ',1);return;}
+  const r=await apiPost('startCount',{site,workLocation:loc,countedBy:by,sessionType:'Full'});
+  let sessionId=r&&r.params?r.params.sessionId:null;
+  if(DEMO){
+    const yr=new Date().getFullYear();
+    sessionId='PC'+String((DB.PhysicalCount||[]).length+1).padStart(4,'0')+'-'+yr;
+    const expected=DB.AssetRegister.filter(a=>a.Status!=='Disposed'&&a.Status!=='Lost'&&a.Site===site&&(!loc||a['Work Location']===loc));
+    DB.PhysicalCount=DB.PhysicalCount||[];DB.PhysicalCountItems=DB.PhysicalCountItems||[];
+    DB.PhysicalCount.push({'Session ID':sessionId,'Session Date':td(),'Site':site,'Work Location':loc,'Counted By':by,'Session Type':'Full','Status':'Open','Parent Session':'','Total Expected':expected.length,'Total Found':0,'Total Missing':0,'Total Extra':0,'Closed Date':'','Remark':''});
+    expected.forEach(a=>DB.PhysicalCountItems.push({'Session ID':sessionId,'Finance Tag':a['Finance Tag'],'S/N':a['S/N']||'','Brand':a.Brand||'','Model':a.Model||'','Expected':'Yes','Found':'No','Old Location':a['Work Location']||'','New Location':'','Item Remark':'','Checked Time':''}));
+  }
+  closeModal();
+  if(!DEMO)await reload();
+  if(sessionId)openCountSession(sessionId);
+}
+async function startRecheck(parentId){
+  const parent=DB.PhysicalCount.find(s=>s['Session ID']===parentId);if(!parent)return;
+  const missing=DB.PhysicalCountItems.filter(it=>it['Session ID']===parentId&&it.Expected==='Yes'&&it.Found==='No');
+  const tags=missing.map(it=>it['Finance Tag']);
+  if(!tags.length){toast('ไม่มีเครื่องที่หายให้ recheck',1);return;}
+  const r=await apiPost('startCount',{site:parent.Site,workLocation:parent['Work Location'],countedBy:parent['Counted By'],sessionType:'Recheck',parentSession:parentId,tags});
+  let sessionId=r&&r.params?r.params.sessionId:null;
+  if(DEMO){
+    const yr=new Date().getFullYear();
+    sessionId='PC'+String(DB.PhysicalCount.length+1).padStart(4,'0')+'-'+yr;
+    DB.PhysicalCount.push({'Session ID':sessionId,'Session Date':td(),'Site':parent.Site,'Work Location':parent['Work Location'],'Counted By':parent['Counted By'],'Session Type':'Recheck','Status':'Open','Parent Session':parentId,'Total Expected':tags.length,'Total Found':0,'Total Missing':0,'Total Extra':0,'Closed Date':'','Remark':''});
+    missing.forEach(m=>DB.PhysicalCountItems.push({'Session ID':sessionId,'Finance Tag':m['Finance Tag'],'S/N':m['S/N']||'','Brand':m.Brand||'','Model':m.Model||'','Expected':'Yes','Found':'No','Old Location':m['Old Location']||'','New Location':'','Item Remark':'','Checked Time':''}));
+  }
+  if(!DEMO)await reload();
+  if(sessionId)openCountSession(sessionId);
+}
+function openCountSession(sessionId){
+  CNT_SESSION=DB.PhysicalCount.find(s=>s['Session ID']===sessionId);
+  if(!CNT_SESSION){toast('ไม่พบ session',1);return;}
+  CNT_ITEMS=DB.PhysicalCountItems.filter(it=>it['Session ID']===sessionId).map(it=>Object.assign({},it));
+  renderCountModal();
+}
+function renderCountModal(){
+  const total=CNT_ITEMS.filter(i=>i.Expected==='Yes').length;
+  const found=CNT_ITEMS.filter(i=>i.Found==='Yes').length;
+  const isRecheck=CNT_SESSION['Session Type']==='Recheck';
+  showModal(mHead((isRecheck?'Recheck · ':'ตรวจนับ · ')+CNT_SESSION['Session ID']+' ('+esc(CNT_SESSION.Site)+(CNT_SESSION['Work Location']?' / '+esc(CNT_SESSION['Work Location']):'')+')')+
+    '<div class="modal-b">'+
+    '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">'+
+      '<div class="search" style="flex:1;margin-right:10px"><input id="cnt_scan" placeholder="สแกน/พิมพ์ Finance Tag หรือ S/N แล้วกด Enter" onkeydown="if(event.key===\'Enter\'){scanCount();event.preventDefault();}"></div>'+
+      '<span style="font-size:13px;font-weight:600;color:var(--accent)">พบ '+found+'/'+total+'</span>'+
+    '</div>'+
+    (isRecheck?'':'<div style="margin-bottom:8px"><button class="btn" style="padding:5px 11px" onclick="addExtraFound()">'+ic('plus')+'เจอเกิน (เครื่องที่ไม่อยู่ในรายการ)</button></div>')+
+    '<div class="tbl-wrap" style="box-shadow:none;max-height:400px;overflow-y:auto"><table><thead><tr><th style="width:40px">พบ</th><th>S/N</th><th>Finance Tag</th><th>ที่อยู่ใหม่ (ถ้าย้าย)</th><th>หมายเหตุ</th></tr></thead><tbody id="cntList"></tbody></table></div>'+
+    '</div>'+
+    '<div class="modal-f"><button class="btn ghost" onclick="CNT_ITEMS=[];CNT_SESSION=null;closeModal()">ปิดก่อน (ไว้นับต่อ)</button><button class="btn pri" onclick="btnBusy(this,()=>doCloseCount())">ปิดการนับ + สรุปผล</button></div>',true);
+  renderCntList();
+  setTimeout(()=>{const s=document.getElementById('cnt_scan');if(s)s.focus();},100);
+}
+function renderCntList(){
+  document.getElementById('cntList').innerHTML=CNT_ITEMS.map((it,i)=>{
+    const extra=it.Expected==='No';
+    return '<tr'+(it.Found==='Yes'?' style="background:#f0fdf4"':'')+(extra?' style="background:#fffbeb"':'')+'>'+
+      '<td><input type="checkbox" '+(it.Found==='Yes'?'checked':'')+' onchange="CNT_ITEMS['+i+'].Found=this.checked?\'Yes\':\'No\';renderCntList()"></td>'+
+      '<td class="mono" style="font-weight:600">'+esc(it['S/N']||'—')+(extra?' <span class="badge" style="background:#fef3c7;color:#92400e;font-size:9px">เกิน</span>':'')+'</td>'+
+      '<td class="mono" style="font-size:11px;color:var(--text-3)">'+esc(it['Finance Tag'])+'</td>'+
+      '<td><input class="inp" style="padding:5px 8px;font-size:12px;min-width:130px" value="'+esc(it['New Location']||'')+'" placeholder="'+esc(it['Old Location']||'—')+'" oninput="CNT_ITEMS['+i+'][\'New Location\']=this.value"></td>'+
+      '<td><input class="inp" style="padding:5px 8px;font-size:12px;min-width:130px" value="'+esc(it['Item Remark']||'')+'" oninput="CNT_ITEMS['+i+'][\'Item Remark\']=this.value"></td>'+
+    '</tr>';
+  }).join('');
+}
+function scanCount(){
+  const q=val('cnt_scan').trim();if(!q)return;
+  const idx=CNT_ITEMS.findIndex(it=>sameTag(it['Finance Tag'],q)||String(it['S/N']||'').toLowerCase()===q.toLowerCase());
+  if(idx>=0){
+    CNT_ITEMS[idx].Found='Yes';
+    toast('พบ: '+(CNT_ITEMS[idx]['S/N']||CNT_ITEMS[idx]['Finance Tag']));
+  }else{
+    const a=DB.AssetRegister.find(x=>sameTag(x['Finance Tag'],q)||String(x['S/N']||'').toLowerCase()===q.toLowerCase());
+    if(a){
+      CNT_ITEMS.push({'Session ID':CNT_SESSION['Session ID'],'Finance Tag':a['Finance Tag'],'S/N':a['S/N']||'','Brand':a.Brand||'','Model':a.Model||'','Expected':'No','Found':'Yes','Old Location':a['Work Location']||'','New Location':'','Item Remark':'เจอเกิน'});
+      toast('เจอเกิน: '+(a['S/N']||a['Finance Tag']));
+    }else{toast('ไม่พบ "'+q+'" ในระบบ',1);}
+  }
+  document.getElementById('cnt_scan').value='';
+  renderCntList();
+  const total=CNT_ITEMS.filter(i=>i.Expected==='Yes').length,found=CNT_ITEMS.filter(i=>i.Found==='Yes').length;
+  renderCountModal();
+}
+function addExtraFound(){
+  const q=prompt('กรอก Finance Tag หรือ S/N ของเครื่องที่เจอเกิน:');if(!q)return;
+  const a=DB.AssetRegister.find(x=>sameTag(x['Finance Tag'],q)||String(x['S/N']||'').toLowerCase()===q.trim().toLowerCase());
+  if(!a){toast('ไม่พบเครื่องนี้ในระบบ',1);return;}
+  if(CNT_ITEMS.some(it=>sameTag(it['Finance Tag'],a['Finance Tag']))){toast('เครื่องนี้อยู่ในรายการแล้ว',1);return;}
+  CNT_ITEMS.push({'Session ID':CNT_SESSION['Session ID'],'Finance Tag':a['Finance Tag'],'S/N':a['S/N']||'','Brand':a.Brand||'','Model':a.Model||'','Expected':'No','Found':'Yes','Old Location':a['Work Location']||'','New Location':'','Item Remark':'เจอเกิน'});
+  renderCntList();
+}
+async function doCloseCount(){
+  const items=CNT_ITEMS.map(it=>({'Finance Tag':it['Finance Tag'],'S/N':it['S/N'],'Brand':it.Brand,'Model':it.Model,'Expected':it.Expected,'Found':it.Found,'Old Location':it['Old Location'],'New Location':it['New Location'],'Item Remark':it['Item Remark']}));
+  const r=await apiPost('closeCount',{sessionId:CNT_SESSION['Session ID'],items});
+  const found=items.filter(i=>i.Found==='Yes').length;
+  const missing=items.filter(i=>i.Expected==='Yes'&&i.Found!=='Yes').length;
+  const extra=items.filter(i=>i.Expected==='No'&&i.Found==='Yes').length;
+  const missingTags=items.filter(i=>i.Expected==='Yes'&&i.Found!=='Yes').map(i=>i['Finance Tag']);
+  if(DEMO){
+    const s=DB.PhysicalCount.find(x=>x['Session ID']===CNT_SESSION['Session ID']);
+    if(s)Object.assign(s,{'Status':'Closed','Total Found':found,'Total Missing':missing,'Total Extra':extra,'Closed Date':td()});
+    DB.PhysicalCountItems=DB.PhysicalCountItems.filter(it=>it['Session ID']!==CNT_SESSION['Session ID']).concat(CNT_ITEMS.map(it=>Object.assign({},it)));
+    items.forEach(it=>{if(it.Found==='Yes'&&it['New Location']&&it['New Location']!==it['Old Location']){const a=DB.AssetRegister.find(x=>sameTag(x['Finance Tag'],it['Finance Tag']));if(a){a['Work Location']=it['New Location'];if(it['Item Remark'])a.Remark=it['Item Remark'];}}});
+  }
+  const sessionType=CNT_SESSION['Session Type'];
+  const sid=CNT_SESSION['Session ID'];
+  CNT_ITEMS=[];CNT_SESSION=null;
+  finishSave(r,'ปิดการนับแล้ว · พบ '+found+' หาย '+missing+' เกิน '+extra);
+  if(missing>0){
+    if(sessionType==='Full'){
+      setTimeout(()=>{if(confirm('มีเครื่องหาไม่เจอ '+missing+' เครื่อง\n\nต้องการเปิดรอบ Recheck เพื่อตรวจซ้ำเฉพาะเครื่องที่หายเลยไหม?'))startRecheck(sid);},400);
+    }else{
+      setTimeout(()=>modalConfirmLost(missingTags),400);
+    }
+  }
+}
+function modalConfirmLost(tags){
+  if(!tags.length)return;
+  const list=tags.map(t=>{const a=DB.AssetRegister.find(x=>sameTag(x['Finance Tag'],t));return a?(a['S/N']||a['Finance Tag'])+' ('+a.Brand+' '+a.Model+')':t;});
+  showModal(mHead('ยืนยันเครื่องหายจริง')+
+    '<div class="modal-b">'+
+    '<p style="font-size:13px;color:var(--danger);background:var(--danger-bg);padding:10px 12px;border-radius:6px;margin:0 0 12px">เครื่องเหล่านี้หาไม่เจอทั้ง 2 รอบ (นับปกติ + Recheck) ยืนยันว่าหายจริงเพื่อเปลี่ยนสถานะเป็น <b>Lost</b> หรือไม่?</p>'+
+    '<ul style="font-size:12.5px;color:var(--text-2);margin:0;padding-left:20px;max-height:200px;overflow-y:auto">'+list.map(l=>'<li style="padding:2px 0">'+esc(l)+'</li>').join('')+'</ul>'+
+    '</div>'+
+    '<div class="modal-f"><button class="btn ghost" onclick="closeModal()">ยังไม่ยืนยัน (ไว้ทีหลัง)</button><button class="btn pri" style="background:var(--danger);border-color:var(--danger)" onclick="btnBusy(this,()=>doConfirmLost('+JSON.stringify(tags).replace(/"/g,'&quot;')+'))">ยืนยันหายจริง ('+tags.length+')</button></div>');
+}
+async function doConfirmLost(tags){
+  const r=await apiPost('confirmLost',{tags});
+  if(DEMO)tags.forEach(t=>{const a=DB.AssetRegister.find(x=>sameTag(x['Finance Tag'],t));if(a)a.Status='Lost';});
+  finishSave(r,'ยืนยันหายจริง '+tags.length+' เครื่อง (เปลี่ยนเป็น Lost)');
+}
+function viewCountReport(sessionId){
+  const s=DB.PhysicalCount.find(x=>x['Session ID']===sessionId);if(!s)return;
+  const items=DB.PhysicalCountItems.filter(it=>it['Session ID']===sessionId);
+  const found=items.filter(i=>i.Found==='Yes'),missing=items.filter(i=>i.Expected==='Yes'&&i.Found!=='Yes'),extra=items.filter(i=>i.Expected==='No'&&i.Found==='Yes');
+  const sec=(title,arr,color)=>arr.length?'<div style="font-size:12px;font-weight:600;color:'+color+';margin:12px 0 6px">'+title+' ('+arr.length+')</div>'+arr.map(it=>'<div style="font-size:12px;padding:3px 0;border-bottom:1px dotted #e5e9f0">'+esc(it['S/N']||it['Finance Tag'])+' · '+esc(it.Brand+' '+it.Model)+(it['New Location']?' → ย้ายไป '+esc(it['New Location']):'')+(it['Item Remark']?' · '+esc(it['Item Remark']):'')+'</div>').join(''):'';
+  showModal(mHead('ผลตรวจนับ · '+sessionId)+
+    '<div class="modal-b">'+
+    '<div style="display:flex;gap:10px;margin-bottom:6px"><div style="flex:1;background:#f0fdf4;padding:10px;border-radius:8px;text-align:center"><div style="font-size:22px;font-weight:700;color:#166534">'+found.length+'</div><div style="font-size:11px;color:var(--text-2)">พบ</div></div>'+
+    '<div style="flex:1;background:var(--danger-bg);padding:10px;border-radius:8px;text-align:center"><div style="font-size:22px;font-weight:700;color:var(--danger)">'+missing.length+'</div><div style="font-size:11px;color:var(--text-2)">หาย</div></div>'+
+    '<div style="flex:1;background:#fffbeb;padding:10px;border-radius:8px;text-align:center"><div style="font-size:22px;font-weight:700;color:#92400e">'+extra.length+'</div><div style="font-size:11px;color:var(--text-2)">เกิน</div></div></div>'+
+    sec('✓ พบ',found,'#166534')+sec('✗ หายไป',missing,'var(--danger)')+sec('+ เจอเกิน',extra,'#92400e')+
+    '</div>'+
+    '<div class="modal-f"><button class="btn pri" onclick="closeModal()">ปิด</button></div>',true);
+}
 
 // ================= BOOT =================
 function td(){return new Date().toISOString().split('T')[0];}
