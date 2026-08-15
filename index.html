@@ -1079,7 +1079,7 @@ async function doReplace(){
     DB.TransferDocument.push(Object.assign({'Document No.':docNo,'Document Date':td(),'Doc Status':'Open'},header));
     items.forEach((it,i)=>{DB.TransferItems.push(Object.assign({'Document No.':docNo,'No.':i+1},it));
       const a=DB.AssetRegister.find(x=>sameTag(x['Finance Tag'],it['Finance Tag']));
-      if(a){Object.assign(a,{'Status':type==='Transfer'?'Assigned':'Borrowed','Employee ID':RP_OLD.eid,'Owner Name':e.Name,'Department':e.Department,'Document No.':docNo});
+      if(a){Object.assign(a,{'Status':type==='Transfer'?'Assigned':'Borrowed','Employee ID':RP_OLD.eid,'Owner Name':e.Name,'Department':e.Department,'Site':e.Site,'Document No.':docNo});
         const acc=accUpdates.find(u=>sameTag(u['Finance Tag'],it['Finance Tag']));if(acc)Object.assign(a,{'Mouse S/N':acc['Mouse S/N'],'Adaptor S/N':acc['Adaptor S/N'],'Bag S/N':acc['Bag S/N'],'Peripherals Remark':acc['Peripherals Remark']});}
       DB.AssetHistory.push({'Transaction ID':'TXN-'+String(DB.AssetHistory.length+1).padStart(4,'0'),'Date':td(),'Finance Tag':it['Finance Tag'],'Transaction Type':type==='Transfer'?'Transferred':'Borrowed','From':'Stock','To':e.Name,'Employee':e.Name,'Department':e.Department,'Document No.':docNo});
     });
@@ -1209,7 +1209,7 @@ async function saveTransfer(){
       DB.TransferItems.push(Object.assign({'Document No.':docNo,'No.':i+1},it));
       const a=DB.AssetRegister.find(x=>sameTag(x['Finance Tag'],it['Finance Tag']));
       if(a){
-        Object.assign(a,{'Status':type==='Transfer'?'Assigned':'Borrowed','Employee ID':eid,'Owner Name':e.Name,'Department':e.Department,'Document No.':docNo});
+        Object.assign(a,{'Status':type==='Transfer'?'Assigned':'Borrowed','Employee ID':eid,'Owner Name':e.Name,'Department':e.Department,'Site':e.Site,'Document No.':docNo});
         const acc=accUpdates.find(u=>sameTag(u['Finance Tag'],it['Finance Tag']));
         if(acc)Object.assign(a,{'Mouse S/N':acc['Mouse S/N'],'Adaptor S/N':acc['Adaptor S/N'],'Bag S/N':acc['Bag S/N'],'Peripherals Remark':acc['Peripherals Remark']});
       }
@@ -1627,6 +1627,10 @@ function renderExport(){
   ).join('');
 }
 function assetByTag(tag){return DB.AssetRegister.find(a=>sameTag(a['Finance Tag'],tag));}
+// Excel ห้ามชื่อแท็บมีอักขระ \ / ? * [ ] : และห้ามยาวเกิน 31 ตัว
+function safeSheetName(name){
+  return String(name).replace(/[\\\/\?\*\[\]:]/g,'-').substring(0,31);
+}
 function doExport(){
  try{
   if(typeof ExcelJS==='undefined'){toast('โหลด ExcelJS ไม่สำเร็จ — เครือข่ายอาจบล็อก CDN ภายนอก ลองเช็คการตั้งค่าเครือข่าย',1);return Promise.resolve();}
@@ -1659,7 +1663,7 @@ function doExport(){
       });});
     }
     const cols=rows.length?Object.keys(rows[0]):['(ไม่มีข้อมูล)'];
-    const ws=wb.addWorksheet(meta.label.substring(0,31));
+    const ws=wb.addWorksheet(safeSheetName(meta.label));
     ws.columns=cols.map(c=>({header:c,key:c,width:Math.min(Math.max(c.length+4,12),40)}));
     rows.forEach(r=>ws.addRow(r));
     // สไตล์หัวตาราง
