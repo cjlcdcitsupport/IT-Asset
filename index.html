@@ -538,6 +538,7 @@ async function btnBusy(btn,fn){
   btn.classList.add('loading');
   btn.innerHTML='<span class="spin"></span><span>กำลังบันทึก...</span>';
   try{await fn();}
+  catch(err){toast('เกิดข้อผิดพลาด: '+(err&&err.message?err.message:String(err)),1);console.error(err);}
   finally{btn.classList.remove('loading');btn.innerHTML=html;}
 }
 
@@ -1627,7 +1628,8 @@ function renderExport(){
 }
 function assetByTag(tag){return DB.AssetRegister.find(a=>sameTag(a['Finance Tag'],tag));}
 function doExport(){
-  if(typeof ExcelJS==='undefined'){toast('โหลด ExcelJS ไม่สำเร็จ ตรวจอินเทอร์เน็ต',1);return Promise.resolve();}
+ try{
+  if(typeof ExcelJS==='undefined'){toast('โหลด ExcelJS ไม่สำเร็จ — เครือข่ายอาจบล็อก CDN ภายนอก ลองเช็คการตั้งค่าเครือข่าย',1);return Promise.resolve();}
   const sets=[...document.querySelectorAll('.exp-set:checked')].map(c=>c.value);
   if(!sets.length){toast('เลือกอย่างน้อย 1 ชุดข้อมูล',1);return Promise.resolve();}
   const sites=[...document.querySelectorAll('.exp-site:checked')].map(c=>c.value);
@@ -1684,7 +1686,12 @@ function doExport(){
     document.body.appendChild(a);a.click();document.body.removeChild(a);
     URL.revokeObjectURL(url);
     toast('ส่งออกไฟล์ Excel แล้ว');
-  }).catch(e=>{toast('ส่งออกไม่สำเร็จ: '+e.message,1);});
+  }).catch(e=>{toast('ส่งออกไม่สำเร็จ: '+(e&&e.message?e.message:String(e)),1);console.error(e);});
+ }catch(err){
+   toast('เกิดข้อผิดพลาดตอนสร้างไฟล์: '+(err&&err.message?err.message:String(err)),1);
+   console.error(err);
+   return Promise.resolve();
+ }
 }
 
 // ================= PHYSICAL COUNT =================
